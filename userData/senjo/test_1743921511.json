@@ -1,0 +1,9 @@
+{
+    "tables": {
+        "test": {
+            "fields": {
+                "tes": "int"
+            }
+        }
+    }
+}

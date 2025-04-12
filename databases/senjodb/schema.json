@@ -1,0 +1,19 @@
+{
+    "tables": {
+        "wan": {
+            "fields": {
+                "waan": "string"
+            }
+        },
+        "tu": {
+            "fields": {
+                "twu": "string"
+            }
+        },
+        "three": {
+            "fields": {
+                "threee": "string"
+            }
+        }
+    }
+}

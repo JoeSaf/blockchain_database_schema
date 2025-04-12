@@ -1,0 +1,6 @@
+{
+    "username": "admin",
+    "role": "admin",
+    "created_at": 1744105271.3122582,
+    "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmHQFyvJODnIUx0D4GgSr\noJZlTlbn/rdeB6UTE+jdll67WG4sWdyjXRcW3NZTKnnlFIkCfIJdkGtPGrO/Oej6\nqZSU5pHXPXFswAX+LTGhbfQ/J6sIG7kmYx1OeOXheyzN8uUkBN7g48nI22BjxDy+\nRuWFavFk6c3ef9lCpTjhO5VyuPq+ZlG6yVKWbn4CGoewasYvDWE/Y9bBte7n3ncz\n40alReqlRSyf4RWSldubMfd9ap/1yEBRcsVDfbLQPBXI770SFRFmouLCr3jtTTcG\naU2bNumKKnGQB5z3SpKZHp40sEBfswNlaAM6Tgh+I+Rag5329xkQ7PZQ3zd38ZJ1\nMwIDAQAB\n-----END PUBLIC KEY-----\n"
+}

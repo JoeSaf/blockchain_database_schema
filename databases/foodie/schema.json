@@ -1,0 +1,27 @@
+{
+    "tables": {
+        "orders": {
+            "fields": {
+                "complete": "string",
+                "incomplete": "string"
+            }
+        },
+        "customers": {
+            "fields": {
+                "name": "string",
+                "location": "string"
+            }
+        },
+        "menu": {
+            "fields": {
+                "available fodds": "string"
+            }
+        },
+        "time": {
+            "fields": {
+                "day": "string",
+                "time": "int"
+            }
+        }
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "tables": {
+        "wan": {
+            "fields": {
+                "waan": "string"
+            }
+        }
+    }
+}
