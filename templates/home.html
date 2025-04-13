@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block title %}Databases{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Available Databases</h2>
+    {% if databases %}
+    <ul>
+        {% for db in databases %}
+        <li>
+            <a href="{{ url_for('list_tables', db_name=db.name) }}">{{ db.name }}</a>
+            <small>(Owner: {{ db.owner }}, Created: {{ db.created_at }})</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No databases available.</p>
+    {% endif %}
+    
+    {% if session.role == 'admin' %}
+    <a href="{{ url_for('create_database') }}" class="btn">Create New Database</a>
+    {% endif %}
+</div>
+{% endblock %}

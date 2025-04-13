@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block title %}Tables in {{ db_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Tables in {{ db_name }}</h2>
+    
+    {% if tables %}
+    <ul>
+        {% for table in tables %}
+        <li>
+            <a href="{{ url_for('view_table', db_name=db_name, table_name=table) }}">{{ table }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No tables available in this database.</p>
+    {% endif %}
+    
+    <a href="{{ url_for('home') }}" class="btn">Back to Databases</a>
+</div>
+{% endblock %}

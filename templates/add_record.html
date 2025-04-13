@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}Add Record to {{ table_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Add New Record to {{ table_name }} ({{ db_name }})</h2>
+    
+    <form method="post" action="{{ url_for('add_record', db_name=db_name, table_name=table_name) }}">
+        {% for field_name, field_type in fields.items() %}
+        <div>
+            <label for="{{ field_name }}">{{ field_name }} ({{ field_type }}):</label>
+            {% if field_type == "bool" %}
+            <select id="{{ field_name }}" name="{{ field_name }}">
+                <option value="true">True</option>
+                <option value="false">False</option>
+            </select>
+            {% else %}
+            <input type="text" id="{{ field_name }}" name="{{ field_name }}" 
+                  {% if field_type == "int" or field_type == "float" %} 
+                  pattern="[0-9]*\.?[0-9]*" 
+                  {% endif %}>
+            {% endif %}
+        </div>
+        {% endfor %}
+        
+        <button type="submit" class="btn">Add Record</button>
+    </form>
+    
+    <a href="{{ url_for('view_table', db_name=db_name, table_name=table_name) }}" class="btn" style="margin-top: 1rem;">Back to Table</a>
+</div>
+{% endblock %}

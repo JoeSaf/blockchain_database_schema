@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Database{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Create New Database</h2>
+    
+    <form method="post" action="{{ url_for('create_database') }}" id="createDbForm">
+        <div>
+            <label for="db_name">Database Name:</label>
+            <input type="text" id="db_name" name="db_name" required>
+        </div>
+        
+        <div>
+            <label for="table_count">Number of Tables:</label>
+            <input type="number" id="table_count" name="table_count" min="1" value="1" required>
+            <button type="button" class="btn" onclick="generateTableForms()">Generate Table Forms</button>
+        </div>
+        
+        <div id="tables_container"></div>
+        
+        <button type="submit" class="btn">Create Database</button>
+    </form>
+    
+    <a href="{{ url_for('home') }}" class="btn" style="margin-top: 1rem;">Back to Databases</a>
+    
+    <script>
+        function generateTableForms() {
+            const tableCount = parseInt(document.getElementById('table_count').value);
+            const container = document.getElementById('tables_container');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= tableCount; i++) {
+                const tableSection = document.createElement('div');
+                tableSection.className = 'form-section';
+                
+                tableSection.innerHTML = `
+                    <h3>Table ${i}</h3>
+                    <div>
+                        <label for="table_name_${i}">Table Name:</label>
+                        <input type="text" id="table_name_${i}" name="table_name_${i}" required>
+                    </div>
+                    <div>
+                        <label for="field_count_${i}">Number of Fields:</label>
+                        <input type="number" id="field_count_${i}" name="field_count_${i}" min="1" value="1" required>
+                        <button type="button" class="btn" onclick="generateFieldForms(${i})">Generate Field Forms</button>
+                    </div>
+                    <div id="fields_container_${i}"></div>
+                `;
+                
+                container.appendChild(tableSection);
+            }
+        }
+        
+        function generateFieldForms(tableIndex) {
+            const fieldCount = parseInt(document.getElementById(`field_count_${tableIndex}`).value);
+            const container = document.getElementById(`fields_container_${tableIndex}`);
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= fieldCount; i++) {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.style.marginLeft = '20px';
+                
+                fieldDiv.innerHTML = `
+                    <h4>Field ${i}</h4>
+                    <div>
+                        <label for="field_name_${tableIndex}_${i}">Field Name:</label>
+                        <input type="text" id="field_name_${tableIndex}_${i}" name="field_name_${tableIndex}_${i}" required>
+                    </div>
+                    <div>
+                        <label for="field_type_${tableIndex}_${i}">Field Type:</label>
+                        <select id="field_type_${tableIndex}_${i}" name="field_type_${tableIndex}_${i}">
+                            <option value="string">String</option>
+                            <option value="int">Integer</option>
+                            <option value="float">Float</option>
+                            <option value="bool">Boolean</option>
+                        </select>
+                    </div>
+                `;
+                
+                container.appendChild(fieldDiv);
+            }
+        }
+        
+        // Initialize with one table form
+        document.addEventListener('DOMContentLoaded', function() {
+            generateTableForms();
+        });
+    </script>
+</div>
+{% endblock %}
