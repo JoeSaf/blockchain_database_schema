@@ -9,11 +9,13 @@ import subprocess
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import hashes, serialization
 import blockchain_databases
+from polymorphic_adjuster import BlockAdjuster
+import shutil
 
 # File to store blockchain data
 BLOCKCHAIN_DB = "blockchain_db.json"
 # Visible security script location
-SECURITY_SCRIPT = "blockchain_security.py"
+# SECURITY_SCRIPT = "blockchain_security.py"
 
 class Block:
     def __init__(self, index, timestamp, data, previous_hash):
@@ -40,8 +42,17 @@ class Block:
 
 class Blockchain:
     def __init__(self):
+        self.chain = []
+        
         if os.path.exists(BLOCKCHAIN_DB):
-            self.load_chain()
+            try:
+                self.load_chain()
+            except Exception as e:
+                print(f"Error loading blockchain: {e}")
+                print("Creating new blockchain with genesis block.")
+                self.chain = [self.create_genesis_block()]
+                self.save_chain()
+                
         else:
             self.chain = [self.create_genesis_block()]
             self.save_chain()
@@ -64,224 +75,67 @@ class Blockchain:
             previous_block = self.chain[i-1]
             
             if current_block.hash != current_block.calculate_hash():
-                # Blockchain integrity compromised, trigger polymorphic response
-                self._trigger_polymorphic_response("Hash mismatch detected")
+                # Blockchain integrity compromised, trigger fallback response
+                self._trigger_fallback_response("Hash mismatch detected")
                 return False
             
             if current_block.previous_hash != previous_block.hash:
-                # Blockchain integrity compromised, trigger polymorphic response
-                self._trigger_polymorphic_response("Chain continuity broken")
+                # Blockchain integrity compromised, trigger fallback response
+                self._trigger_fallback_response("Chain continuity broken")
                 return False
                 
         return True
-    # Add this method to the Blockchain class in polymorphicblock.py
-    def rehash_chain(self):
-        """Recalculate all hashes to ensure chain integrity"""
-    # Skip genesis block (index 0)
-        for i in range(1, len(self.chain)):
-        # Set the previous hash to the hash of the previous block
-            self.chain[i].previous_hash = self.chain[i-1].hash
-        # Recalculate the hash of the current block
-            self.chain[i].hash = self.chain[i].calculate_hash()
     
-            print("Chain rehashed successfully")
-        self.save_chain()
-    
-    def _trigger_polymorphic_response(self, breach_reason):
-        """Creates and executes a polymorphic security response when blockchain integrity is compromised"""
+    def _trigger_fallback_response(self, breach_reason):
+        """Creates a fallback database when blockchain integrity is compromised"""
         print(f"WARNING: Blockchain integrity compromised - {breach_reason}")
         print("Initiating security response...")
-        
-        # Generate a new polymorphic security script
-        def generate_polymorphic_script():
-            # Create a payload for security response actions
-            payload = f"""
-import os
-import json
-import time
-import hashlib
-import socket
-import platform
-import random
-import sys
 
-# Security breach details
-BREACH_DETAILS = {{
-    "timestamp": {time.time()},
-    "reason": "{breach_reason}",
-    "blockchain_db": "{BLOCKCHAIN_DB}"
-}}
+        fallback_db = "fallback_db.json"
+        fallback_data = {
+            "created_at": time.time(),
+            "breach_reason": breach_reason,
+            "users": {}
+        }
 
-# Create security report
-def create_security_report():
-    report = {{
-        "timestamp": time.time(),
-        "platform": platform.platform(),
-        "hostname": socket.gethostname(),
-        "username": os.getlogin(),
-        "event": "blockchain_integrity_compromised",
-        "reason": BREACH_DETAILS["reason"],
-        "severity": "critical"
-    }}
-    
-    # Hash the report for integrity verification
-    report_hash = hashlib.sha256(json.dumps(report).encode()).hexdigest()
-    report["report_hash"] = report_hash
-    
-    # Create a secure log file
-    secure_log_path = "security_logs"
-    os.makedirs(secure_log_path, exist_ok=True)
-    
-    log_file = os.path.join(secure_log_path, f"breach_{{int(time.time())}}.log")
-    with open(log_file, "w") as f:
-        json.dump(report, f, indent=4)
-    
-    print(f"Security breach details logged to {{log_file}}")
-    return log_file
+        for block in self.chain:
+            if block.data.get("action") == "register":
+                username = block.data.get("username")
+                role = block.data.get("role")
+                private_key = block.data.get("private_key")
+                public_key = block.data.get("public_key")
 
-# Backup the blockchain file
-def backup_blockchain():
-    if os.path.exists("{BLOCKCHAIN_DB}"):
-        backup_file = "{BLOCKCHAIN_DB}.bak.{{int(time.time())}}"
-        try:
-            with open("{BLOCKCHAIN_DB}", "r") as src:
-                with open(backup_file, "w") as dst:
-                    dst.write(src.read())
-            print(f"Blockchain backup created: {{backup_file}}")
-            return backup_file
-        except Exception as e:
-            print(f"Failed to backup blockchain: {{str(e)}}")
-    return None
+                if username:
+                    fallback_data["users"][username] = {
+                        "role": role,
+                        "private_key": private_key,
+                        "public_key": public_key,
+                        "migrated_at": time.time()
+                    }
 
-# Execute security measures
-def execute_security_measures():
-    print("Executing security response for blockchain integrity breach...")
-    log_file = create_security_report()
-    backup_file = backup_blockchain()
-    
-    # Notify about the security measures taken
-    print("\\nSecurity Response Summary:")
-    print(f"- Security breach logged: {{log_file}}")
-    if backup_file:
-        print(f"- Blockchain backup created: {{backup_file}}")
-    print(f"- Next security variant will be generated")
-    
-    # Generate a new variant for next execution
-    create_next_variant()
+        with open(fallback_db, "w") as f:
+            json.dump(fallback_data, f, indent=4)
 
-# Create the next polymorphic variant
-def create_next_variant():
-    # Generate a random identifier for the next variant
-    variant_id = random.randint(1000, 9999)
-    next_script = f"blockchain_security_{{variant_id}}.py"
-    
-    # Create the content for the next variant with some mutations
-    with open(__file__, "r") as f:
-        content = f.read()
-    
-    # Simple mutations to make each variant slightly different
-    mutations = [
-        # Randomize variable names
-        ("create_security_report", f"generate_security_log_{{random.randint(100, 999)}}"),
-        ("backup_blockchain", f"create_blockchain_backup_{{random.randint(100, 999)}}"),
-        ("execute_security_measures", f"run_security_protocol_{{random.randint(100, 999)}}"),
-        # Add random delay
-        ("import time", "import time\\ntime.sleep(random.randint(1, 5))"),
-        # Modify print statements
-        ("Security breach details logged", f"Security incident recorded (variant: {{variant_id}})"),
-        ("Blockchain backup created", f"Blockchain state preserved (variant: {{variant_id}})")
-    ]
-    
-    # Apply mutations
-    mutated_content = content
-    for original, replacement in mutations:
-        if original in mutated_content:
-            mutated_content = mutated_content.replace(original, replacement)
-    
-    # Write the new variant
-    with open(next_script, "w") as f:
-        f.write(mutated_content)
-    
-    print(f"Next security variant created: {{next_script}}")
-    
-    # Make the new variant executable
-    os.chmod(next_script, 0o755)
+        print("\nSecurity measures completed:")
+        print(f"- Created fallback database: {fallback_db}")
+        print(f"- Migrated {len(fallback_data['users'])} users to fallback database")
+        print("- System will now use the fallback database")
 
-# Start execution
-if __name__ == "__main__":
-    execute_security_measures()
-"""
-            # Apply basic XOR encryption for some obfuscation
-            key = random.randint(1, 255)
-            
-            # Fix: Properly encode and escape the encrypted payload string
-            encrypted_payload = ""
-            for c in payload:
-                enc_char = chr(ord(c) ^ key)
-                # Escape problematic characters in the string
-                if enc_char == '"':
-                    encrypted_payload += '\\"'
-                elif enc_char == '\\':
-                    encrypted_payload += '\\\\'
-                elif enc_char == '\n':
-                    encrypted_payload += '\\n'
-                elif enc_char == '\r':
-                    encrypted_payload += '\\r'
-                elif enc_char == '\t':
-                    encrypted_payload += '\\t'
-                elif ord(enc_char) < 32 or ord(enc_char) > 126:
-                    # Use unicode escape for non-printable characters
-                    encrypted_payload += f'\\u{ord(enc_char):04x}'
-                else:
-                    encrypted_payload += enc_char
-            
-            # Create the decryption wrapper
-            decryption_script = f"""
-import os
-import random
-import time
-import sys
-
-print("Blockchain Security Response - Variant {random.randint(1000, 9999)}")
-
-# Decrypt and execute the security payload
-def run_security_protocol():
-    # Decryption key and encrypted payload
-    key = {key}
-    encrypted_payload = "{encrypted_payload}"
+        self.rehash_chain()
+        print("- Blockchain rehashed to restore integrity")
     
-    # Decrypt the payload
-    decrypted_payload = ''
-    for c in encrypted_payload:
-        decrypted_payload += chr(ord(c) ^ key)
-    
-    # Execute the decrypted payload
-    exec(decrypted_payload)
+    def rehash_chain(self):
+        """Recalculate all hashes to ensure chain integrity"""
+        if len(self.chain) < 20:  # Replace with your known minimum if needed
+            print("WARNING: Chain size seems unexpectedly low. Aborting rehash to prevent data loss.")
+            return
 
-# Run the security protocol
-if __name__ == "__main__":
-    try:
-        run_security_protocol()
-    except Exception as e:
-        print(f"Security protocol execution error: {{str(e)}}")
-"""
-            return decryption_script
-        
-        # Create the security script
-        with open(SECURITY_SCRIPT, "w") as f:
-            f.write(generate_polymorphic_script())
-        
-        # Make it executable
-        os.chmod(SECURITY_SCRIPT, 0o755)
-        
-        # Execute the security response
-        try:
-            subprocess.Popen(["python", SECURITY_SCRIPT], 
-                          stdout=subprocess.PIPE, 
-                          stderr=subprocess.PIPE)
-            print(f"Security response initiated. Check {SECURITY_SCRIPT} for details.")
-        except Exception as e:
-            print(f"Failed to execute security response: {str(e)}")
+        for i in range(1, len(self.chain)):
+            self.chain[i].previous_hash = self.chain[i-1].hash
+            self.chain[i].hash = self.chain[i].calculate_hash()
+
+        print("Chain rehashed successfully")
+        self.save_chain()
     
     def to_dict(self):
         return [block.to_dict() for block in self.chain]
@@ -495,7 +349,7 @@ class AuthSystem:
                 self.blockchain.add_block(new_block)
                 
                 # Verify blockchain integrity after adding authentication
-                # If chain is compromised, this will trigger the polymorphic response
+                # If chain is compromised, this will trigger the fallback response
                 if not self.blockchain.is_chain_valid():
                     return None, None
                 
@@ -556,11 +410,13 @@ def authenticate():
     username = input("Enter username: ")
     password = getpass.getpass("Enter password: ")
     
-    return auth_system.authenticate(username, password)
+    auth_result = auth_system.authenticate(username, password)
+    if auth_result[0]:
+        return auth_result[0], auth_result[1], auth_system  # Only return username, role, and auth_system
+    return None, None, None
 
-def main_menu(username, user_role, core_refresher=None):
+def main_menu(username, user_role, auth_system, adjuster=None):
     """Main menu after successful login"""
-    auth_system = AuthSystem()
     
     while True:
         print("\nBlockchain Authentication System")
@@ -583,9 +439,10 @@ def main_menu(username, user_role, core_refresher=None):
             new_pass = getpass.getpass("Enter new password: ")
             auth_system.register_user(new_user, new_role, new_pass)
             
-            # Refresh after adding a user
-            if core_refresher:
-                core_refresher.refresh()
+            # Refresh blockchain state manually
+            auth_system.blockchain.load_chain()
+            auth_system.load_users_from_blockchain()
+            auth_system.verify_blockchain()
             
         elif choice == "3":
             auth_system.verify_blockchain()
@@ -600,17 +457,17 @@ def main_menu(username, user_role, core_refresher=None):
                 print(f"Block #{block['index']}: {action} - {username} ({timestamp})")
                 
         elif choice == "5":
-            database_menu(username, user_role, auth_system, core_refresher)
+            database_menu(username, user_role, auth_system)
             
         elif choice == "6":
-            user_item_menu(username, auth_system, core_refresher)
+            user_item_menu(username, auth_system)
         
         elif choice == "7":
-            if core_refresher:
-                core_refresher.refresh()
-                print("Blockchain state refreshed successfully.")
-            else:
-                print("CoreRefresher not initialized.")
+            # Manually refresh blockchain state
+            auth_system.blockchain.load_chain()
+            auth_system.load_users_from_blockchain()
+            auth_system.verify_blockchain()
+            print("Blockchain state refreshed successfully.")
             
         elif choice == "8":
             print("Logging out...")
@@ -620,8 +477,36 @@ def main_menu(username, user_role, core_refresher=None):
             print("Invalid option or insufficient privileges!")
             
 
-def database_menu(username, user_role, auth_system, core_refresher=None):
+def database_menu(username, user_role, auth_system):
     """Database operations menu"""
+    def upload_to_selected_database(db_name, item_name):
+        from file_upload_ui import FileUploadDialog
+        upload_dialog = FileUploadDialog(title=f"Upload Files to {db_name}")
+        selected_files = upload_dialog.show()
+        
+        if selected_files and len(selected_files) > 0:
+            success_count = 0
+            for file_path in selected_files:
+                try:
+                    # Create a unique filename for the item
+                    timestamp = int(time.time())
+                    file_ext = os.path.splitext(file_path)[1]
+                    item_filename = f"{item_name}_{os.path.basename(file_path)}_{timestamp}{file_ext}"
+                    
+                    # Store the file in the database
+                    stored_path = auth_system.db_manager.store_item(db_name, item_filename, file_path, username)
+                    if stored_path:
+                        print(f"✓ Stored: {os.path.basename(file_path)}")
+                        success_count += 1
+                    else:
+                        print(f"✗ Failed to store: {os.path.basename(file_path)}")
+                except Exception as e:
+                    print(f"✗ Error storing {os.path.basename(file_path)}: {str(e)}")
+            
+            print(f"\nUpload complete. Successfully stored {success_count} out of {len(selected_files)} files.")
+        else:
+            print("No files selected. Operation cancelled.")
+
     while True:
         print("\nDatabase Operations")
         print("1. List Available Databases")
@@ -629,6 +514,7 @@ def database_menu(username, user_role, auth_system, core_refresher=None):
         print("3. View Database Items")
         print("4. Add Item to Database")
         print("5. Return to Main Menu")
+        print("6. Add user to a Database")
         choice = input("Enter option: ")
         
         if choice == "1":
@@ -647,13 +533,22 @@ def database_menu(username, user_role, auth_system, core_refresher=None):
             
             # Simple schema definition
             schema = {"tables": {}}
-            table_count = int(input("How many tables to create? "))
+            try:
+                table_count = int(input("How many tables to create? "))
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+                continue
             
             for i in range(table_count):
                 table_name = input(f"Enter name for table {i+1}: ")
                 schema["tables"][table_name] = {"fields": {}}
                 
-                field_count = int(input(f"How many fields in table '{table_name}'? "))
+                try:
+                    field_count = int(input(f"How many fields in table '{table_name}'? "))
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+                    continue
+                    
                 for j in range(field_count):
                     field_name = input(f"Enter name for field {j+1}: ")
                     field_type = input(f"Enter type for field '{field_name}' (string/int/float/bool): ")
@@ -678,9 +573,13 @@ def database_menu(username, user_role, auth_system, core_refresher=None):
             for idx, db in enumerate(databases, 1):
                 print(f"{idx}. {db['name']} (Owner: {db['owner']})")
                 
-            db_idx = int(input("Select database number: ")) - 1
-            if db_idx < 0 or db_idx >= len(databases):
-                print("Invalid selection.")
+            try:
+                db_idx = int(input("Select database number: ")) - 1
+                if db_idx < 0 or db_idx >= len(databases):
+                    print("Invalid selection. Please enter a valid database number.")
+                    continue
+            except ValueError:
+                print("Invalid input. Please enter a number.")
                 continue
                 
             selected_db = databases[db_idx]["name"]
@@ -694,18 +593,28 @@ def database_menu(username, user_role, auth_system, core_refresher=None):
                 # Option to view item content
                 view_item = input("View an item? (y/n): ").lower()
                 if view_item == 'y':
-                    item_idx = int(input("Select item number: ")) - 1
-                    if item_idx >= 0 and item_idx < len(items):
-                        item_path = items[item_idx]["path"]
-                        try:
+                    try:
+                        item_idx = int(input("Select item number: ")) - 1
+                        if item_idx < 0 or item_idx >= len(items):
+                            print("Invalid selection. Please enter a valid item number.")
+                            continue
+                    except ValueError:
+                        print("Invalid input. Please enter a number.")
+                        continue
+                        
+                    item_path = items[item_idx]["path"]
+                    try:
+                        # Check if it's a text-based file
+                        if item_path.endswith(('.txt', '.json', '.py')):
                             with open(item_path, "r") as f:
                                 content = f.read()
                                 print(f"\nContent of '{items[item_idx]['name']}':")
                                 print(content)
-                        except Exception as e:
-                            print(f"Error reading item: {str(e)}")
-                    else:
-                        print("Invalid selection.")
+                        else:
+                            print(f"\nFile '{items[item_idx]['name']}' is not a text file and cannot be displayed.")
+                            print(f"File path: {item_path}")
+                    except Exception as e:
+                        print(f"Error reading item: {str(e)}")
             else:
                 print(f"No items found in database '{selected_db}'.")
                 
@@ -720,36 +629,101 @@ def database_menu(username, user_role, auth_system, core_refresher=None):
             for idx, db in enumerate(databases, 1):
                 print(f"{idx}. {db['name']} (Owner: {db['owner']})")
                 
-            db_idx = int(input("Select database number: ")) - 1
-            if db_idx < 0 or db_idx >= len(databases):
-                print("Invalid selection.")
+            try:
+                db_idx = int(input("Select database number: ")) - 1
+                if db_idx < 0 or db_idx >= len(databases):
+                    print("Invalid selection. Please enter a valid database number.")
+                    continue
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+                continue
+                
+            selected_db = databases[db_idx]["name"]
+            item_name = input("Enter item name: ")
+            upload_to_selected_database(selected_db, item_name)
+            
+        elif choice == "5":
+            break
+            
+        elif choice == "6":
+            # Add user to database
+            if user_role != "admin":
+                print("Only administrators can add users to databases.")
+                continue
+                
+            databases = auth_system.db_manager.list_databases(username, user_role)
+            if not databases:
+                print("No databases available.")
+                continue
+                
+            print("\nAvailable Databases:")
+            for idx, db in enumerate(databases, 1):
+                print(f"{idx}. {db['name']} (Owner: {db['owner']})")
+                
+            try:
+                db_idx = int(input("Select database number: ")) - 1
+                if db_idx < 0 or db_idx >= len(databases):
+                    print("Invalid selection. Please enter a valid database number.")
+                    continue
+            except ValueError:
+                print("Invalid input. Please enter a number.")
                 continue
                 
             selected_db = databases[db_idx]["name"]
             
-            # Get item details
-            item_name = input("Enter item name: ")
-            print("Enter item data (JSON format):")
-            item_data_str = input()
+            # Get user details
+            new_username = input("Enter username to add: ")
+            new_role = input("Enter role for this user (user/admin): ").lower()
             
+            if new_role not in ['user', 'admin']:
+                print("Invalid role. Please enter 'user' or 'admin'.")
+                continue
+                
+            # Add user to database
             try:
-                item_data = json.loads(item_data_str)
-                
-                # Store the item
-                item_path = auth_system.db_manager.store_item(selected_db, item_name, item_data, username)
-                if item_path:
-                    print(f"Item '{item_name}' stored successfully in database '{selected_db}'")
-            except json.JSONDecodeError:
-                print("Invalid JSON format. Item not stored.")
-                
-        elif choice == "5":
-            break
+                success = auth_system.db_manager.add_user_to_database(selected_db, new_username, new_role, username)
+                if success:
+                    print(f"User '{new_username}' added successfully to database '{selected_db}'")
+                else:
+                    print(f"Failed to add user '{new_username}' to database '{selected_db}'")
+            except Exception as e:
+                print(f"Error adding user to database: {str(e)}")
             
         else:
             print("Invalid option or insufficient privileges!")
 
-def user_item_menu(username, auth_system, core_refresher=None):
+def user_item_menu(username, auth_system):
     """User item management menu"""
+    def upload_to_user_folder():
+        from file_upload_ui import FileUploadDialog
+        upload_dialog = FileUploadDialog(title=f"Upload Files for {username}")
+        selected_files = upload_dialog.show()
+        
+        if selected_files and len(selected_files) > 0:
+            success_count = 0
+            for file_path in selected_files:
+                try:
+                    # Create a unique filename for the item
+                    timestamp = int(time.time())
+                    file_ext = os.path.splitext(file_path)[1]
+                    item_filename = f"{item_name}_{os.path.basename(file_path)}_{timestamp}{file_ext}"
+                    item_path = os.path.join("userData", username, item_filename)
+                    
+                    # Ensure user folder exists
+                    os.makedirs(os.path.dirname(item_path), exist_ok=True)
+                    
+                    # Copy the file
+                    shutil.copy2(file_path, item_path)
+                    print(f"✓ Stored: {os.path.basename(file_path)}")
+                    success_count += 1
+                    
+                except Exception as e:
+                    print(f"✗ Error storing {os.path.basename(file_path)}: {str(e)}")
+            
+            print(f"\nUpload complete. Successfully stored {success_count} out of {len(selected_files)} files.")
+        else:
+            print("No files selected. Operation cancelled.")
+
     while True:
         print("\nUser Item Management")
         print("1. List My Items")
@@ -763,26 +737,38 @@ def user_item_menu(username, auth_system, core_refresher=None):
             user_folder = os.path.join("userData", username)
             
             if os.path.exists(user_folder):
-                items = [f for f in os.listdir(user_folder) if f.endswith('.json') and f != 'user_info.json']
+                # List all files except user_info.json
+                items = [f for f in os.listdir(user_folder) if f != 'user_info.json']
                 
                 if items:
                     print(f"\nItems for user '{username}':")
                     for idx, item in enumerate(items, 1):
                         item_path = os.path.join(user_folder, item)
-                        item_name = item.split('_')[0]  # Extract name from filename
-                        print(f"{idx}. {item_name}")
+                        try:
+                            # Get file info
+                            stat = os.stat(item_path)
+                            size = format_size(stat.st_size)
+                            modified = time.strftime("%Y-%m-%d %H:%M", time.localtime(stat.st_mtime))
+                            print(f"{idx}. {item} (Size: {size}, Modified: {modified})")
+                        except Exception as e:
+                            print(f"{idx}. {item} (Error reading file info: {str(e)})")
                     
                     # Option to view item content
-                    view_item = input("View an item? (y/n): ").lower()
+                    view_item = input("\nView an item? (y/n): ").lower()
                     if view_item == 'y':
                         item_idx = int(input("Select item number: ")) - 1
                         if item_idx >= 0 and item_idx < len(items):
                             item_path = os.path.join(user_folder, items[item_idx])
                             try:
-                                with open(item_path, "r") as f:
-                                    content = f.read()
-                                    print(f"\nContent of '{items[item_idx]}':")
-                                    print(content)
+                                # Check if it's a text-based file
+                                if item_path.endswith(('.txt', '.json', '.py')):
+                                    with open(item_path, "r") as f:
+                                        content = f.read()
+                                        print(f"\nContent of '{items[item_idx]}':")
+                                        print(content)
+                                else:
+                                    print(f"\nFile '{items[item_idx]}' is not a text file and cannot be displayed.")
+                                    print(f"File path: {item_path}")
                             except Exception as e:
                                 print(f"Error reading item: {str(e)}")
                         else:
@@ -796,27 +782,23 @@ def user_item_menu(username, auth_system, core_refresher=None):
             # Get user object from username
             user_obj = User(username, auth_system.users[username]["role"])
             
-            # Get item details
+            # Get item name
             item_name = input("Enter item name: ")
-            print("Enter item data (JSON format):")
-            item_data_str = input()
+            upload_to_user_folder()
             
-            try:
-                item_data = json.loads(item_data_str)
-                
-                # Store the item
-                item_path = user_obj.store_user_item(item_name, item_data)
-                print(f"Item '{item_name}' stored successfully at {item_path}")
-                if core_refresher:
-                    core_refresher.refresh()
-            except json.JSONDecodeError:
-                print("Invalid JSON format. Item not stored.")
-                
         elif choice == "3":
             break
             
         else:
             print("Invalid option!")
+
+def format_size(size_bytes):
+    """Convert size in bytes to human readable format"""
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} TB"
 
 # Initialize system with admin if blockchain is empty
 def initialize_system():
@@ -829,16 +811,15 @@ def initialize_system():
     
     # Initialize folders
     blockchain_databases.initialize_database_folders()
-    return auth_system  # Return the initialized auth_system
-
+    return auth_system
 
 # Test function to simulate blockchain tampering (for demonstration purposes)
 def simulate_tampering():
-    """Simulate tampering with the blockchain to trigger the polymorphic response"""
+    """Simulate tampering with the blockchain to trigger the fallback response"""
     print("\n[TEST] Simulating blockchain tampering...")
     try:
         blockchain = Blockchain()
-        # Modify a block to trigger the polymorphic response
+        # Modify a block to trigger the fallback response
         if len(blockchain.chain) > 1:
             # Change data in a block
             blockchain.chain[1].data["username"] = "hacker"
@@ -851,12 +832,14 @@ def simulate_tampering():
         print(f"[TEST] Error during tampering simulation: {str(e)}")
 
 if __name__ == "__main__":
-    # Initialize the system and get the auth_system instance
+    # Initialize the system
     auth_system = initialize_system()
     
+    adjuster = BlockAdjuster(auth_system.blockchain)
+    
     # Authenticate user
-    username, user_role = authenticate()
+    username, user_role, auth_system = authenticate()
     
     # If authentication successful, show main menu
     if username:
-        main_menu(username, user_role)
+        main_menu(username, user_role, auth_system, adjuster)

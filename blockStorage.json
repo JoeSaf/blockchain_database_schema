@@ -89,5 +89,63 @@
         "storpath": "databases/foodie/taste food_1744104316.json",
         "previous_hash": "f307afdb22e799f85b69189d4c89019b49f29a863704614441a3ec24747c3ae6",
         "hash": "a0453e3b87194d50a5cee0e2625c0e8c11c90b0596e3c94486b51877b795601b"
+    },
+    {
+        "index": 7,
+        "timestamp": 1746994693.6938252,
+        "data": {
+            "action": "create_database",
+            "name": "aftercrashtest_db",
+            "owner": "admin",
+            "timestamp": 1746994693.6938186
+        },
+        "storpath": "databases/aftercrashtest_db",
+        "previous_hash": "a0453e3b87194d50a5cee0e2625c0e8c11c90b0596e3c94486b51877b795601b",
+        "hash": "d64d26297b9478b6fe0a1f28df74823c292acc36500cd4dae89ee8e77b65d6e2"
+    },
+    {
+        "index": 8,
+        "timestamp": 1746994958.2193177,
+        "data": {
+            "action": "add_user_to_database",
+            "database": "aftercrashtest_db",
+            "username": "nejotester",
+            "role": "admin",
+            "admin": "admin",
+            "timestamp": 1746994958.2193155
+        },
+        "storpath": "databases/aftercrashtest_db/users.json",
+        "previous_hash": "d64d26297b9478b6fe0a1f28df74823c292acc36500cd4dae89ee8e77b65d6e2",
+        "hash": "003c43bebd3818ec1c8db92445fb9c78cdfa6554cd91695fa6ca0e12f06652a4"
+    },
+    {
+        "index": 9,
+        "timestamp": 1746995867.707872,
+        "data": {
+            "action": "store_item",
+            "database": "aftercrashtest_db",
+            "item_name": "test_chemical_nord.png_1746995849.png_arctic-landscape.png",
+            "owner": "admin",
+            "timestamp": 1746995867.7078474,
+            "file_type": ".png"
+        },
+        "storpath": "databases/aftercrashtest_db/test_chemical_nord.png_1746995849.png_arctic-landscape.png_1746995867.png",
+        "previous_hash": "003c43bebd3818ec1c8db92445fb9c78cdfa6554cd91695fa6ca0e12f06652a4",
+        "hash": "021861d7f79143c0e9acd69538691943e87835550e47f58a86222063ce35ba00"
+    },
+    {
+        "index": 10,
+        "timestamp": 1746996182.7284272,
+        "data": {
+            "action": "store_item",
+            "database": "aftercrashtest_db",
+            "item_name": "checkingloopfix_container_ship.png_1746996173.png_storage.py",
+            "owner": "admin",
+            "timestamp": 1746996182.7283995,
+            "file_type": ".py"
+        },
+        "storpath": "databases/aftercrashtest_db/checkingloopfix_container_ship.png_1746996173.png_storage.py_1746996182.py",
+        "previous_hash": "021861d7f79143c0e9acd69538691943e87835550e47f58a86222063ce35ba00",
+        "hash": "289e3b77c263d4a6c5f91292a307cd6c2860e20ace985c4bcd7650688a71f8fb"
     }
 ]

@@ -5,8 +5,12 @@ import time
 import base64
 import random
 import subprocess
+import shutil
+import tkinter as tk
+from tkinter import filedialog, ttk
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import hashes, serialization
+from file_upload_ui import FileUploadDialog
 
 # File paths for database storage
 BLOCKSTOR = "blockStorage.json"
@@ -166,14 +170,24 @@ class DatabaseStorage:
         
         # Create an item file
         timestamp = int(time.time())
-        item_filename = f"{item_name}_{timestamp}.json"
+        item_filename = f"{item_name}_{timestamp}"
         item_path = os.path.join(db_path, item_filename)
         
-        # Store the item data
-        with open(item_path, "w") as f:
-            if isinstance(item_data, dict) or isinstance(item_data, list):
+        # Handle different types of item_data
+        if isinstance(item_data, (dict, list)):
+            # If it's JSON data, save as JSON
+            item_path += ".json"
+            with open(item_path, "w") as f:
                 json.dump(item_data, f, indent=4)
-            else:
+        elif isinstance(item_data, str) and os.path.isfile(item_data):
+            # If it's a file path, copy the file
+            file_ext = os.path.splitext(item_data)[1]
+            item_path += file_ext
+            shutil.copy2(item_data, item_path)
+        else:
+            # If it's other data, save as text
+            item_path += ".txt"
+            with open(item_path, "w") as f:
                 f.write(str(item_data))
         
         # Add block to blockchain
@@ -182,7 +196,8 @@ class DatabaseStorage:
             "database": db_name,
             "item_name": item_name,
             "owner": owner,
-            "timestamp": time.time()
+            "timestamp": time.time(),
+            "file_type": os.path.splitext(item_path)[1]
         }
         
         new_block = DatabaseBlock(
@@ -265,7 +280,23 @@ class DatabaseManager:
             print(f"You don't have permission to modify this database!")
             return None
         
-        return self.db_storage.store_item(db_name, item_name, item_data, username)
+        # Launch file upload dialog
+        upload_dialog = FileUploadDialog(title=f"Upload Files to {db_name}")
+        selected_files = upload_dialog.show()
+        
+        if not selected_files:
+            print("No files selected. Operation cancelled.")
+            return None
+            
+        stored_paths = []
+        for file_path in selected_files:
+            # Store each selected file
+            stored_path = self.db_storage.store_item(db_name, f"{item_name}_{os.path.basename(file_path)}", file_path, username)
+            if stored_path:
+                stored_paths.append(stored_path)
+                print(f"Stored file: {os.path.basename(file_path)}")
+                
+        return stored_paths if stored_paths else None
     
     def get_database_items(self, db_name, username=None, role=None):
         """Get items from a database (filter by access permissions)"""
@@ -283,6 +314,90 @@ class DatabaseManager:
             return []
         
         return self.db_storage.get_database_items(db_name)
+
+    def add_user_to_database(self, db_name, new_username, new_role, admin_username):
+        """Add a user to a specific database with given role"""
+        # Verify admin privileges
+        if self.auth_system.users.get(admin_username, {}).get("role") != "admin":
+            print("Only administrators can add users to databases!")
+            return False
+            
+        # Check if database exists
+        all_dbs = self.db_storage.list_databases()
+        db = next((d for d in all_dbs if d["name"] == db_name), None)
+        
+        if not db:
+            print(f"Database '{db_name}' not found!")
+            return False
+            
+        # Check if user exists in the system
+        if new_username not in self.auth_system.users:
+            print(f"User '{new_username}' does not exist in the system!")
+            create_user = input("Would you like to create this user first? (y/n): ").lower()
+            if create_user == 'y':
+                # Get password for new user
+                import getpass
+                password = getpass.getpass(f"Enter password for new user '{new_username}': ")
+                
+                # Create the user in the system
+                success = self.auth_system.register_user(new_username, new_role, password)
+                if not success:
+                    print("Failed to create user. Aborting database user addition.")
+                    return False
+                print(f"User '{new_username}' created successfully.")
+            else:
+                print("User creation declined. Aborting database user addition.")
+                return False
+            
+        # Create database users file if it doesn't exist
+        db_path = os.path.join("databases", db_name)
+        users_file = os.path.join(db_path, "users.json")
+        
+        if not os.path.exists(users_file):
+            users_data = {"users": {}}
+        else:
+            try:
+                with open(users_file, "r") as f:
+                    users_data = json.load(f)
+            except json.JSONDecodeError:
+                users_data = {"users": {}}
+        
+        # Add or update user in database
+        users_data["users"][new_username] = {
+            "role": new_role,
+            "added_by": admin_username,
+            "added_at": time.time()
+        }
+        
+        # Save updated users data
+        try:
+            with open(users_file, "w") as f:
+                json.dump(users_data, f, indent=4)
+                
+            # Add block to blockchain
+            block_data = {
+                "action": "add_user_to_database",
+                "database": db_name,
+                "username": new_username,
+                "role": new_role,
+                "admin": admin_username,
+                "timestamp": time.time()
+            }
+            
+            new_block = DatabaseBlock(
+                index=len(self.db_storage.chain),
+                timestamp=time.time(),
+                data=block_data,
+                storpath=users_file,
+                previous_hash=""
+            )
+            
+            self.db_storage.add_block(new_block)
+            return True
+            
+        except Exception as e:
+            print(f"Error adding user to database: {str(e)}")
+            return False
 
 # Initialize database folder
 def initialize_database_folders():
@@ -302,3 +417,77 @@ def initialize_database_folders():
         print(f"Created userData directory at {os.path.abspath(userData_path)}")
     
     return database_path
+
+class FileUploadDialog:
+    def __init__(self, parent=None, title=""):
+        self.selected_files = []
+        self.result = None
+        
+        # Create the main window
+        self.root = tk.Tk() if parent is None else tk.Toplevel(parent)
+        self.root.title(title)
+        self.root.geometry("600x400")
+        
+        # Create and configure the main frame
+        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Create the file list
+        self.file_list = tk.Listbox(main_frame, width=70, height=15)
+        self.file_list.grid(row=0, column=0, columnspan=2, pady=5)
+        
+        # Add scrollbar to file list
+        scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=self.file_list.yview)
+        scrollbar.grid(row=0, column=2, sticky=(tk.N, tk.S))
+        self.file_list.configure(yscrollcommand=scrollbar.set)
+        
+        # Create buttons
+        ttk.Button(main_frame, text="Add Files", command=self.add_files).grid(row=1, column=0, pady=5)
+        ttk.Button(main_frame, text="Remove Selected", command=self.remove_selected).grid(row=1, column=1, pady=5)
+        
+        # Create confirm and cancel buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=2, column=0, columnspan=2, pady=10)
+        ttk.Button(button_frame, text="Confirm", command=self.confirm).grid(row=0, column=0, padx=5)
+        ttk.Button(button_frame, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=5)
+        
+        # Configure grid weights
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+        
+    def add_files(self):
+        files = filedialog.askopenfilenames(
+            title="Select Files",
+            filetypes=[
+                ("All Files", "*.*"),
+                ("Text Files", "*.txt"),
+                ("JSON Files", "*.json"),
+                ("Python Files", "*.py"),
+                ("Image Files", "*.png *.jpg *.jpeg *.gif"),
+                ("Document Files", "*.pdf *.doc *.docx")
+            ]
+        )
+        for file in files:
+            if file not in self.selected_files:
+                self.selected_files.append(file)
+                self.file_list.insert(tk.END, os.path.basename(file))
+    
+    def remove_selected(self):
+        selected = self.file_list.curselection()
+        for index in reversed(selected):
+            self.file_list.delete(index)
+            self.selected_files.pop(index)
+    
+    def confirm(self):
+        self.result = self.selected_files
+        self.root.destroy()
+    
+    def cancel(self):
+        self.result = None
+        self.root.destroy()
+    
+    def show(self):
+        self.root.mainloop()
+        return self.result

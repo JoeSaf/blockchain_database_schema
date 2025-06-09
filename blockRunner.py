@@ -5,14 +5,16 @@ import time
 import getpass
 from polymorphicblock import AuthSystem, authenticate, initialize_system, main_menu
 import blockchain_databases
-from core_refresher import CoreRefresher
+# Removed CoreRefresher import
+# Keeping but commenting out the other imports in case you need them later
 from polymorphic_adjuster import BlockAdjuster
 from storage import BlockchainStorage
 
 # Global objects that can be imported by other modules
 auth_system = None
-blockchain = None 
-refresher = None
+blockchain = None
+adjuster = None
+# Removed refresher
 
 def setup_directories():
     """Set up all necessary directories for the blockchain system"""
@@ -39,7 +41,7 @@ def check_database_files():
 
 def initialize_blockchain_system():
     """Initialize the entire blockchain system"""
-    global auth_system, blockchain, refresher
+    global auth_system, blockchain
     
     print("\n===== Blockchain System Setup =====")
     
@@ -55,10 +57,7 @@ def initialize_blockchain_system():
     # Initialize the blockchain system and get auth_system
     auth_system = initialize_system()
     blockchain = auth_system.blockchain
-    
-    # Initialize storage and refresher
-    storage = BlockchainStorage(filename="blockchain_db.json")
-    refresher = CoreRefresher(blockchain, auth_system.db_manager, storage)
+    adjuster = BlockAdjuster(blockchain)
     
     # Initialize database folders
     blockchain_databases.initialize_database_folders()
@@ -66,37 +65,31 @@ def initialize_blockchain_system():
     print("\nBlockchain system initialized successfully.")
     print("Please login to continue.")
     
-    return auth_system, blockchain, refresher
+    return auth_system, blockchain
 
 def run_system():
     """Run the blockchain system"""
-    global auth_system, blockchain, refresher
+    global auth_system, blockchain, adjuster
     
     # Initialize the system if needed
     if not os.path.exists("blockchain_db.json"):
-        auth_system, blockchain, refresher = initialize_blockchain_system()
+        auth_system, blockchain = initialize_blockchain_system()
     else:
         # Load existing system
         auth_system = AuthSystem()
         blockchain = auth_system.blockchain
-        storage = BlockchainStorage(filename="blockchain_db.json") 
-        refresher = CoreRefresher(blockchain, auth_system.db_manager, storage)
-        
-        # block re-organizer- this re-orders blocks to increase intergrity,
-        # at a 20 block radius while maintaining the genesis block
         adjuster = BlockAdjuster(blockchain)
-        adjuster.start_timer()
-    
+        adjuster.start_timer()    
     # Authenticate user
-    username, user_role = authenticate()
+    username, user_role, auth_system_new = authenticate()
     
     # If authentication successful, show main menu
     if username:
-        # Call initial refresh
-        refresher.refresh()
+        # Update global auth_system with the one from authentication
+        auth_system = auth_system_new
         
-        # Show main menu
-        main_menu(username, user_role, refresher)
+        # Show main menu - pass auth_system to main_menu
+        main_menu(username, user_role, auth_system, adjuster)
 
 if __name__ == "__main__":
     run_system()

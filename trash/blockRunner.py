@@ -5,6 +5,16 @@ import time
 import getpass
 from polymorphicblock import AuthSystem, authenticate, initialize_system, main_menu
 import blockchain_databases
+# Removed CoreRefresher import
+# Keeping but commenting out the other imports in case you need them later
+from polymorphic_adjuster import BlockAdjuster
+from storage import BlockchainStorage
+
+# Global objects that can be imported by other modules
+auth_system = None
+blockchain = None
+adjuster = None
+# Removed refresher
 
 def setup_directories():
     """Set up all necessary directories for the blockchain system"""
@@ -31,6 +41,8 @@ def check_database_files():
 
 def initialize_blockchain_system():
     """Initialize the entire blockchain system"""
+    global auth_system, blockchain
+    
     print("\n===== Blockchain System Setup =====")
     
     # Setup all directories
@@ -42,27 +54,42 @@ def initialize_blockchain_system():
         print(f"The following database files are missing: {', '.join(missing_files)}")
         print("These will be created during system initialization.")
     
-    # Initialize the blockchain system
-    initialize_system()
+    # Initialize the blockchain system and get auth_system
+    auth_system = initialize_system()
+    blockchain = auth_system.blockchain
+    adjuster = BlockAdjuster(blockchain)
     
     # Initialize database folders
     blockchain_databases.initialize_database_folders()
     
     print("\nBlockchain system initialized successfully.")
     print("Please login to continue.")
+    
+    return auth_system, blockchain
 
 def run_system():
     """Run the blockchain system"""
+    global auth_system, blockchain, adjuster
+    
     # Initialize the system if needed
     if not os.path.exists("blockchain_db.json"):
-        initialize_blockchain_system()
-    
+        auth_system, blockchain = initialize_blockchain_system()
+    else:
+        # Load existing system
+        auth_system = AuthSystem()
+        blockchain = auth_system.blockchain
+        adjuster = BlockAdjuster(blockchain)
+        adjuster.start_timer()    
     # Authenticate user
-    username, user_role = authenticate()
+    username, user_role, auth_system_new = authenticate()
     
     # If authentication successful, show main menu
     if username:
-        main_menu(username, user_role)
+        # Update global auth_system with the one from authentication
+        auth_system = auth_system_new
+        
+        # Show main menu - pass auth_system to main_menu
+        main_menu(username, user_role, auth_system, adjuster)
 
 if __name__ == "__main__":
     run_system()
