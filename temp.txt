@@ -1,16 +1,22 @@
-        print("\n🎉 [QUARANTINE COMPLETE] System successfully sanitized!")
-        print("=" * 70)
-        print(f"📁 Centralized storage location: {self.chain_manager.base_dir}")
-        print(f"📄 Fallback database: {fallback_path.name}")
-        print(f"🚫 Quarantine data: {quarantine_path.name}")
-        print(f"🔍 Forensic report: {forensic_path.name}")
-        print(f"📊 Statistics:")
-        print(f"   ├─ Original chain: {fallback_data['original_chain_length']} blocks")
-        print(f"   ├─ Clean chain: {fallback_data['clean_chain_length']} blocks")
-        print(f"   ├─ Quarantined: {fallback_data['quarantined_blocks_count']} blocks")
-        print(f"   └─ Users preserved: {len(clean_users)}")
-
-        print(f"\n✅ Active blockchain updated with clean chain")
-        print(f"🚫 Infected blocks stored in quarantine directory")
-        print(f"🛡️  System integrity restored with centralized management")
+    def get_path(self, file_type, filename=None, timestamp=None):
+        if timestamp is None:
+            timestamp = int(time.time())
         
+        base_path = self.subdirs.get(file_type, self.base_dir)
+        
+        # If specific filename provided, use it
+        if filename:
+            return base_path / filename
+        
+        # Default filenames for each type
+        default_names = {
+            'active': 'blockchain_db.json',
+            'fallback': f'enhanced_fallback_db_{timestamp}.json',
+            'quarantine': f'quarantined_blocks_{timestamp}.json',
+            'forensic': f'forensic_report_{timestamp}.json',
+            'backups': f'backup_blockchain_{timestamp}.json'
+        }
+        
+        # Use .get() to avoid KeyError
+        filename = default_names.get(file_type, f'{file_type}_{timestamp}.json')
+        return base_path / filename
