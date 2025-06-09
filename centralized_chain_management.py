@@ -354,7 +354,7 @@ class EnhancedBlockchainWithCentralizedStorage:
         # Step 5: Save files to centralized locations
         
         # Save enhanced fallback database
-        fallback_path = self.chain_manager.get_path('fallback', timestamp=timestamp)
+        fallback_path = self.chain_manager.get_path('fallbacks', timestamp=timestamp)
         with open(fallback_path, "w") as f:
             json.dump(fallback_data, f, indent=4)
         
@@ -369,7 +369,7 @@ class EnhancedBlockchainWithCentralizedStorage:
             }, f, indent=4)
         
         # Save detailed forensic report
-        forensic_path = self.chain_manager.get_path('forensic', timestamp=timestamp)
+        forensic_path = self.chain_manager.get_path('forensics', timestamp=timestamp)
         with open(forensic_path, "w") as f:
             json.dump({
                 "forensic_timestamp": time.time(),

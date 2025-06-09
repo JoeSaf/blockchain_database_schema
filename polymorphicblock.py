@@ -50,10 +50,11 @@ class ChainDirectoryManager:
         # Default filenames for each type
         default_names = {
             'active': 'blockchain_db.json',
-            'fallback': f'enhanced_fallback_db_{timestamp}.json',
+            'fallbacks': f'enhanced_fallback_db_{timestamp}.json',
             'quarantine': f'quarantined_blocks_{timestamp}.json',
-            'forensic': f'forensic_report_{timestamp}.json',
-            'backups': f'backup_blockchain_{timestamp}.json'
+            'forensics': f'forensic_report_{timestamp}.json',
+            'backups': f'backup_blockchain_{timestamp}.json',
+            'clean_chain': f'clean_blockchain_db_{timestamp}.json'
         }
         
         # Use .get() to avoid KeyError
@@ -285,7 +286,7 @@ class Blockchain:
         timestamp = int(time.time())
         
         # Save enhanced fallback database
-        fallback_path = self.chain_manager.get_path('fallback', timestamp=timestamp)
+        fallback_path = self.chain_manager.get_path('fallbacks', timestamp=timestamp)
         with open(fallback_path, "w") as f:
             json.dump(fallback_data, f, indent=4)
         
@@ -300,7 +301,7 @@ class Blockchain:
             }, f, indent=4)
             
         # Save forensic report
-        forensic_path = self.chain_manager.get_path('forensic', timestamp=timestamp)
+        forensic_path = self.chain_manager.get_path('forensics', timestamp=timestamp)
         with open(forensic_path, "w") as f:
             json.dump({
                 "forensic_timestamp": time.time(),

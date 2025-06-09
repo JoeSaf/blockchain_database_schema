@@ -1,0 +1,104 @@
+{
+    "quarantine_timestamp": 1749486670.3231776,
+    "quarantine_reason": "Blockchain infection detected",
+    "infected_blocks": [
+        {
+            "block_id": 20,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "0cac08c8ec4c7ab5rtda0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "calculated_hash": "0cac08c8ec4c7ab583a0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1743880526.2312691
+            },
+            "timestamp": 1743880526.2312737,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 21,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "0cac08c8ec4c7ab5rtda0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "actual_previous": "0cac08c8ec4c7ab583a0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1743880439.3398693
+            },
+            "timestamp": 1743880439.3398747,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 36,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "65ba1f11we32aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "calculated_hash": "65ba1f11cb2aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1746621837.7569413
+            },
+            "timestamp": 1746621837.7569463,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 37,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "65ba1f11we32aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "actual_previous": "65ba1f11cb2aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1746622015.6559553
+            },
+            "timestamp": 1746622015.6559596,
+            "severity": "CRITICAL"
+        }
+    ],
+    "quarantined_block_data": [
+        {
+            "index": 20,
+            "timestamp": 1743880526.2312737,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1743880526.2312691
+            },
+            "previous_hash": "862aa00bd8323c9c4a7ee352b335100005968c953b0ee54e66fc24201be3843e",
+            "hash": "0cac08c8ec4c7ab5rtda0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80"
+        },
+        {
+            "index": 21,
+            "timestamp": 1743880439.3398747,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1743880439.3398693
+            },
+            "previous_hash": "0cac08c8ec4c7ab583a0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "hash": "7a16e8299b72e59fdd3a916d344492ce2bf034ae84b8b34a61dff08509edb681"
+        },
+        {
+            "index": 36,
+            "timestamp": 1746621837.7569463,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1746621837.7569413
+            },
+            "previous_hash": "88a01333708857412e92daf7d07a7da43c8e79a37029539acbfe8465b3e391d1",
+            "hash": "65ba1f11we32aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7"
+        },
+        {
+            "index": 37,
+            "timestamp": 1746622015.6559596,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1746622015.6559553
+            },
+            "previous_hash": "65ba1f11cb2aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "hash": "a4e86aeb06987260f9daecef0b8fd2639e85cffa5d4c1a26df55736039cc08c7"
+        }
+    ]
+}

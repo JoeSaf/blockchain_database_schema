@@ -1,0 +1,9 @@
+{
+    "tables": {
+        "gui view": {
+            "fields": {
+                "can you see it": "string"
+            }
+        }
+    }
+}

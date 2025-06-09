@@ -13,9 +13,9 @@
     },
     "file_naming_conventions": {
         "active_chain": "blockchain_db.json",
-        "fallback": "enhanced_fallback_db_{timestamp}.json",
+        "fallbacks": "enhanced_fallback_db_{timestamp}.json",
         "quarantine": "quarantined_blocks_{timestamp}.json",
-        "backup": "backup_blockchain_{timestamp}.json",
+        "backups": "backup_blockchain_{timestamp}.json",
         "forensic": "forensic_report_{timestamp}.json"
     }
 }

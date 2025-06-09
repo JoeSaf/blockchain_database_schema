@@ -700,5 +700,31 @@ def debug_routes():
     response = app.make_response("<br>".join(sorted(output)))
     response.headers["content-type"] = "text/html"
     return response
+
+
 if __name__ == "__main__":
-    app.run(port=1337, debug=True)
+    import socket
+    
+    # Get local IP address
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    
+    print("="*50)
+    print("🔗 Blockchain Database System Starting...")
+    print("="*50)
+    print(f"🏠 Local access:      http://localhost:1337")
+    print(f"🌐 Network access:    http://{local_ip}:1337")
+    print(f"📱 Mobile access:     http://{local_ip}:1337")
+    print("="*50)
+    print("📊 Available endpoints:")
+    print(f"   • Home:            http://{local_ip}:1337/")
+    print(f"   • Login:           http://{local_ip}:1337/login")
+    print(f"   • Dashboard:       http://{local_ip}:1337/blockchain-dashboard")
+    print(f"   • API Chain:       http://{local_ip}:1337/api/chain")
+    print(f"   • API Status:      http://{local_ip}:1337/api/status")
+    print("="*50)
+    print("🔥 Server is running... Press Ctrl+C to stop")
+    print("="*50)
+    
+    # CRITICAL FIX: Add host="0.0.0.0" to accept external connections
+    app.run(host="0.0.0.0", port=1337, debug=True)

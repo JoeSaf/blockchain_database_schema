@@ -1,0 +1,68 @@
+{
+    "forensic_timestamp": 1749486670.323746,
+    "analysis_type": "Blockchain Infection Analysis",
+    "infected_blocks": [
+        {
+            "block_id": 20,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "0cac08c8ec4c7ab5rtda0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "calculated_hash": "0cac08c8ec4c7ab583a0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1743880526.2312691
+            },
+            "timestamp": 1743880526.2312737,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 21,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "0cac08c8ec4c7ab5rtda0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "actual_previous": "0cac08c8ec4c7ab583a0227a2d6f3405066de47d7f53ccbc2ad1454b00d26e80",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1743880439.3398693
+            },
+            "timestamp": 1743880439.3398747,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 36,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "65ba1f11we32aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "calculated_hash": "65ba1f11cb2aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1746621837.7569413
+            },
+            "timestamp": 1746621837.7569463,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 37,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "65ba1f11we32aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "actual_previous": "65ba1f11cb2aca2220e67993e596bf4358503ce855e270d08571bb969d8d94e7",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1746622015.6559553
+            },
+            "timestamp": 1746622015.6559596,
+            "severity": "CRITICAL"
+        }
+    ],
+    "quarantine_actions": [
+        "Block #20 quarantined",
+        "Block #21 quarantined",
+        "Block #36 quarantined",
+        "Block #37 quarantined"
+    ],
+    "file_locations": {
+        "fallback_database": "system_chains/enhanced_fallback_db_1749486670.json",
+        "quarantined_blocks": "system_chains/quarantine/quarantined_blocks_1749486670.json"
+    }
+}

@@ -147,5 +147,18 @@
         "storpath": "databases/aftercrashtest_db/checkingloopfix_container_ship.png_1746996173.png_storage.py_1746996182.py",
         "previous_hash": "021861d7f79143c0e9acd69538691943e87835550e47f58a86222063ce35ba00",
         "hash": "289e3b77c263d4a6c5f91292a307cd6c2860e20ace985c4bcd7650688a71f8fb"
+    },
+    {
+        "index": 11,
+        "timestamp": 1749484831.0364559,
+        "data": {
+            "action": "create_database",
+            "name": "checking to see presence in gui",
+            "owner": "admin",
+            "timestamp": 1749484831.0364487
+        },
+        "storpath": "databases/checking to see presence in gui",
+        "previous_hash": "289e3b77c263d4a6c5f91292a307cd6c2860e20ace985c4bcd7650688a71f8fb",
+        "hash": "b763ebfe4b2d1808636d8a27146a8779cb8d0e41b93d1d7442e03bfc8cd381b1"
     }
 ]
