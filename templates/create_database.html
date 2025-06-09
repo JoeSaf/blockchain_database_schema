@@ -3,90 +3,688 @@
 {% block title %}Create Database{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Create New Database</h2>
-    
-    <form method="post" action="{{ url_for('create_database') }}" id="createDbForm">
-        <div>
-            <label for="db_name">Database Name:</label>
-            <input type="text" id="db_name" name="db_name" required>
+<style>
+    .create-db-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        margin-bottom: 25px;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .form-title {
+        font-size: 2rem;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .form-subtitle {
+        color: #666;
+        font-size: 1.1rem;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+    }
+
+    .btn-small {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+
+    .table-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 2px dashed #dee2e6;
+        transition: border-color 0.3s ease;
+    }
+
+    .table-section:hover {
+        border-color: #667eea;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .table-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 150px 40px;
+        gap: 15px;
+        align-items: end;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .field-row:hover {
+        border-color: #667eea;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+
+    .counter {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8f9fa;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .counter-value {
+        background: #667eea;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-weight: 600;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .help-text {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 5px;
+        font-style: italic;
+    }
+
+    .required {
+        color: #e74c3c;
+    }
+
+    .form-actions {
+        position: sticky;
+        bottom: 20px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+        margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+        .create-db-container {
+            padding: 15px;
+        }
+
+        .form-card {
+            padding: 20px;
+        }
+
+        .field-row {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .button-group {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="create-db-container">
+    <div class="form-card">
+        <div class="form-header">
+            <h1 class="form-title">🗄️ Create New Database</h1>
+            <p class="form-subtitle">Design your blockchain database schema with tables and fields</p>
         </div>
         
-        <div>
-            <label for="table_count">Number of Tables:</label>
-            <input type="number" id="table_count" name="table_count" min="1" value="1" required>
-            <button type="button" class="btn" onclick="generateTableForms()">Generate Table Forms</button>
-        </div>
-        
-        <div id="tables_container"></div>
-        
-        <button type="submit" class="btn">Create Database</button>
-    </form>
-    
-    <a href="{{ url_for('home') }}" class="btn" style="margin-top: 1rem;">Back to Databases</a>
-    
-    <script>
-        function generateTableForms() {
-            const tableCount = parseInt(document.getElementById('table_count').value);
-            const container = document.getElementById('tables_container');
-            container.innerHTML = '';
-            
-            for (let i = 1; i <= tableCount; i++) {
-                const tableSection = document.createElement('div');
-                tableSection.className = 'form-section';
+        <form method="post" action="{{ url_for('create_database') }}" id="createDbForm">
+            <!-- Database Name -->
+            <div class="form-group">
+                <label for="db_name" class="form-label">
+                    Database Name <span class="required">*</span>
+                </label>
+                <input type="text" 
+                       id="db_name" 
+                       name="db_name" 
+                       class="form-input" 
+                       placeholder="Enter a unique database name..."
+                       required
+                       pattern="[a-zA-Z0-9_-]+"
+                       title="Only letters, numbers, underscores, and hyphens allowed">
+                <div class="help-text">Choose a descriptive name using only letters, numbers, underscores, and hyphens.</div>
+            </div>
+
+            <!-- Tables Configuration -->
+            <div class="form-group">
+                <label class="form-label">
+                    Database Tables <span class="required">*</span>
+                    <span class="counter">
+                        <span>Tables:</span>
+                        <span class="counter-value" id="table-counter">1</span>
+                    </span>
+                </label>
                 
-                tableSection.innerHTML = `
-                    <h3>Table ${i}</h3>
-                    <div>
-                        <label for="table_name_${i}">Table Name:</label>
-                        <input type="text" id="table_name_${i}" name="table_name_${i}" required>
-                    </div>
-                    <div>
-                        <label for="field_count_${i}">Number of Fields:</label>
-                        <input type="number" id="field_count_${i}" name="field_count_${i}" min="1" value="1" required>
-                        <button type="button" class="btn" onclick="generateFieldForms(${i})">Generate Field Forms</button>
-                    </div>
-                    <div id="fields_container_${i}"></div>
-                `;
+                <div id="tables_container">
+                    <!-- Tables will be generated here -->
+                </div>
                 
-                container.appendChild(tableSection);
-            }
-        }
-        
-        function generateFieldForms(tableIndex) {
-            const fieldCount = parseInt(document.getElementById(`field_count_${tableIndex}`).value);
-            const container = document.getElementById(`fields_container_${tableIndex}`);
-            container.innerHTML = '';
-            
-            for (let i = 1; i <= fieldCount; i++) {
-                const fieldDiv = document.createElement('div');
-                fieldDiv.style.marginLeft = '20px';
-                
-                fieldDiv.innerHTML = `
-                    <h4>Field ${i}</h4>
-                    <div>
-                        <label for="field_name_${tableIndex}_${i}">Field Name:</label>
-                        <input type="text" id="field_name_${tableIndex}_${i}" name="field_name_${tableIndex}_${i}" required>
-                    </div>
-                    <div>
-                        <label for="field_type_${tableIndex}_${i}">Field Type:</label>
-                        <select id="field_type_${tableIndex}_${i}" name="field_type_${tableIndex}_${i}">
-                            <option value="string">String</option>
-                            <option value="int">Integer</option>
-                            <option value="float">Float</option>
-                            <option value="bool">Boolean</option>
-                        </select>
-                    </div>
-                `;
-                
-                container.appendChild(fieldDiv);
-            }
-        }
-        
-        // Initialize with one table form
-        document.addEventListener('DOMContentLoaded', function() {
-            generateTableForms();
-        });
-    </script>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="button" class="btn btn-success btn-small" onclick="addTable()">
+                        ➕ Add Table
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hidden field for table count -->
+            <input type="hidden" id="table_count" name="table_count" value="1">
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <div class="button-group">
+                    <button type="submit" class="btn btn-success">
+                        🚀 Create Database
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="previewSchema()">
+                        👁️ Preview Schema
+                    </button>
+                    <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                        🔙 Back to Home
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
+
+<!-- Schema Preview Modal -->
+<div id="schema-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; backdrop-filter: blur(5px);">
+    <div style="background: white; margin: 5% auto; padding: 30px; width: 80%; max-width: 700px; border-radius: 15px; max-height: 80vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0;">
+            <h3 style="margin: 0; color: #333;">📋 Database Schema Preview</h3>
+            <span onclick="closeModal()" style="font-size: 2rem; cursor: pointer; color: #999;">&times;</span>
+        </div>
+        <pre id="schema-preview" style="background: #f8f9fa; padding: 20px; border-radius: 8px; overflow-x: auto; font-family: 'Courier New', monospace;"></pre>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="closeModal()" class="btn btn-secondary">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let tableCount = 1;
+
+    // Initialize with one table
+    document.addEventListener('DOMContentLoaded', function() {
+        generateTables();
+    });
+
+    function generateTables() {
+        const container = document.getElementById('tables_container');
+        container.innerHTML = '';
+        
+        for (let i = 1; i <= tableCount; i++) {
+            addTableSection(i);
+        }
+        
+        updateTableCounter();
+    }
+
+    function addTable() {
+        tableCount++;
+        addTableSection(tableCount);
+        updateTableCounter();
+        updateTableCountInput();
+        
+        // Scroll to new table
+        setTimeout(() => {
+            const newTable = document.querySelector(`#table-section-${tableCount}`);
+            if (newTable) {
+                newTable.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
+    }
+
+    function addTableSection(tableIndex) {
+        const container = document.getElementById('tables_container');
+        
+        const tableSection = document.createElement('div');
+        tableSection.className = 'table-section';
+        tableSection.id = `table-section-${tableIndex}`;
+        
+        tableSection.innerHTML = `
+            <div class="table-header">
+                <h3 class="table-title">📋 Table ${tableIndex}</h3>
+                <div>
+                    <span class="counter">
+                        <span>Fields:</span>
+                        <span class="counter-value" id="field-counter-${tableIndex}">1</span>
+                    </span>
+                    ${tableIndex > 1 ? `<button type="button" class="btn btn-danger btn-small" onclick="removeTable(${tableIndex})" style="margin-left: 10px;">🗑️ Remove</button>` : ''}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="table_name_${tableIndex}" class="form-label">
+                    Table Name <span class="required">*</span>
+                </label>
+                <input type="text" 
+                       id="table_name_${tableIndex}" 
+                       name="table_name_${tableIndex}" 
+                       class="form-input"
+                       placeholder="e.g., users, products, orders..."
+                       required
+                       pattern="[a-zA-Z0-9_]+"
+                       title="Only letters, numbers, and underscores allowed">
+                <div class="help-text">Table name should be descriptive and use only letters, numbers, and underscores.</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Fields <span class="required">*</span></label>
+                <div id="fields_container_${tableIndex}">
+                    <!-- Fields will be generated here -->
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button type="button" class="btn btn-success btn-small" onclick="addField(${tableIndex})">
+                        ➕ Add Field
+                    </button>
+                </div>
+            </div>
+            
+            <input type="hidden" id="field_count_${tableIndex}" name="field_count_${tableIndex}" value="1">
+        `;
+        
+        container.appendChild(tableSection);
+        
+        // Generate initial field for this table
+        generateFields(tableIndex);
+    }
+
+    function removeTable(tableIndex) {
+        if (tableCount <= 1) {
+            alert('You must have at least one table in your database.');
+            return;
+        }
+        
+        const tableSection = document.getElementById(`table-section-${tableIndex}`);
+        if (tableSection) {
+            tableSection.remove();
+            tableCount--;
+            updateTableCounter();
+            updateTableCountInput();
+            renumberTables();
+        }
+    }
+
+    function renumberTables() {
+        const tableSections = document.querySelectorAll('.table-section');
+        tableSections.forEach((section, index) => {
+            const newIndex = index + 1;
+            section.id = `table-section-${newIndex}`;
+            
+            // Update table title
+            const title = section.querySelector('.table-title');
+            if (title) {
+                title.textContent = `📋 Table ${newIndex}`;
+            }
+            
+            // Update field names and IDs within this table
+            updateTableFieldNames(section, newIndex);
+        });
+    }
+
+    function updateTableFieldNames(tableSection, newTableIndex) {
+        // Update table name input
+        const tableNameInput = tableSection.querySelector('input[name^="table_name_"]');
+        if (tableNameInput) {
+            tableNameInput.name = `table_name_${newTableIndex}`;
+            tableNameInput.id = `table_name_${newTableIndex}`;
+        }
+        
+        // Update field count hidden input
+        const fieldCountInput = tableSection.querySelector('input[name^="field_count_"]');
+        if (fieldCountInput) {
+            fieldCountInput.name = `field_count_${newTableIndex}`;
+            fieldCountInput.id = `field_count_${newTableIndex}`;
+        }
+        
+        // Update fields container
+        const fieldsContainer = tableSection.querySelector('div[id^="fields_container_"]');
+        if (fieldsContainer) {
+            fieldsContainer.id = `fields_container_${newTableIndex}`;
+        }
+        
+        // Update field counter
+        const fieldCounter = tableSection.querySelector('span[id^="field-counter-"]');
+        if (fieldCounter) {
+            fieldCounter.id = `field-counter-${newTableIndex}`;
+        }
+        
+        // Update add field button
+        const addFieldBtn = tableSection.querySelector('button[onclick^="addField("]');
+        if (addFieldBtn) {
+            addFieldBtn.setAttribute('onclick', `addField(${newTableIndex})`);
+        }
+        
+        // Update remove table button
+        const removeTableBtn = tableSection.querySelector('button[onclick^="removeTable("]');
+        if (removeTableBtn && newTableIndex > 1) {
+            removeTableBtn.setAttribute('onclick', `removeTable(${newTableIndex})`);
+        } else if (removeTableBtn && newTableIndex === 1) {
+            removeTableBtn.remove();
+        }
+        
+        // Regenerate fields with correct naming
+        generateFields(newTableIndex);
+    }
+
+    function generateFields(tableIndex) {
+        const fieldCount = parseInt(document.getElementById(`field_count_${tableIndex}`).value) || 1;
+        const container = document.getElementById(`fields_container_${tableIndex}`);
+        container.innerHTML = '';
+        
+        for (let i = 1; i <= fieldCount; i++) {
+            addFieldRow(tableIndex, i);
+        }
+        
+        updateFieldCounter(tableIndex);
+    }
+
+    function addField(tableIndex) {
+        const fieldCountInput = document.getElementById(`field_count_${tableIndex}`);
+        const currentCount = parseInt(fieldCountInput.value) || 0;
+        const newCount = currentCount + 1;
+        
+        fieldCountInput.value = newCount;
+        addFieldRow(tableIndex, newCount);
+        updateFieldCounter(tableIndex);
+    }
+
+    function addFieldRow(tableIndex, fieldIndex) {
+        const container = document.getElementById(`fields_container_${tableIndex}`);
+        
+        const fieldRow = document.createElement('div');
+        fieldRow.className = 'field-row';
+        fieldRow.id = `field-row-${tableIndex}-${fieldIndex}`;
+        
+        fieldRow.innerHTML = `
+            <div>
+                <label for="field_name_${tableIndex}_${fieldIndex}" class="form-label">Field Name</label>
+                <input type="text" 
+                       id="field_name_${tableIndex}_${fieldIndex}" 
+                       name="field_name_${tableIndex}_${fieldIndex}" 
+                       class="form-input"
+                       placeholder="e.g., username, price, created_at..."
+                       required
+                       pattern="[a-zA-Z0-9_]+"
+                       title="Only letters, numbers, and underscores allowed">
+            </div>
+            <div>
+                <label for="field_type_${tableIndex}_${fieldIndex}" class="form-label">Type</label>
+                <select id="field_type_${tableIndex}_${fieldIndex}" 
+                        name="field_type_${tableIndex}_${fieldIndex}" 
+                        class="form-select">
+                    <option value="string">String</option>
+                    <option value="int">Integer</option>
+                    <option value="float">Float</option>
+                    <option value="bool">Boolean</option>
+                </select>
+            </div>
+            <div>
+                <button type="button" 
+                        class="btn btn-danger btn-small" 
+                        onclick="removeField(${tableIndex}, ${fieldIndex})"
+                        title="Remove this field">
+                    🗑️
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(fieldRow);
+    }
+
+    function removeField(tableIndex, fieldIndex) {
+        const fieldCountInput = document.getElementById(`field_count_${tableIndex}`);
+        const currentCount = parseInt(fieldCountInput.value) || 1;
+        
+        if (currentCount <= 1) {
+            alert('Each table must have at least one field.');
+            return;
+        }
+        
+        const fieldRow = document.getElementById(`field-row-${tableIndex}-${fieldIndex}`);
+        if (fieldRow) {
+            fieldRow.remove();
+            fieldCountInput.value = currentCount - 1;
+            updateFieldCounter(tableIndex);
+            renumberFields(tableIndex);
+        }
+    }
+
+    function renumberFields(tableIndex) {
+        const container = document.getElementById(`fields_container_${tableIndex}`);
+        const fieldRows = container.querySelectorAll('.field-row');
+        
+        fieldRows.forEach((row, index) => {
+            const newFieldIndex = index + 1;
+            row.id = `field-row-${tableIndex}-${newFieldIndex}`;
+            
+            // Update field name input
+            const nameInput = row.querySelector('input[name^="field_name_"]');
+            if (nameInput) {
+                nameInput.name = `field_name_${tableIndex}_${newFieldIndex}`;
+                nameInput.id = `field_name_${tableIndex}_${newFieldIndex}`;
+            }
+            
+            // Update field type select
+            const typeSelect = row.querySelector('select[name^="field_type_"]');
+            if (typeSelect) {
+                typeSelect.name = `field_type_${tableIndex}_${newFieldIndex}`;
+                typeSelect.id = `field_type_${tableIndex}_${newFieldIndex}`;
+            }
+            
+            // Update remove button
+            const removeBtn = row.querySelector('button[onclick^="removeField("]');
+            if (removeBtn) {
+                removeBtn.setAttribute('onclick', `removeField(${tableIndex}, ${newFieldIndex})`);
+            }
+        });
+    }
+
+    function updateTableCounter() {
+        document.getElementById('table-counter').textContent = tableCount;
+    }
+
+    function updateFieldCounter(tableIndex) {
+        const fieldCount = document.getElementById(`field_count_${tableIndex}`).value;
+        const counter = document.getElementById(`field-counter-${tableIndex}`);
+        if (counter) {
+            counter.textContent = fieldCount;
+        }
+    }
+
+    function updateTableCountInput() {
+        document.getElementById('table_count').value = tableCount;
+    }
+
+    function previewSchema() {
+        const schema = generateSchemaPreview();
+        document.getElementById('schema-preview').textContent = JSON.stringify(schema, null, 2);
+        document.getElementById('schema-modal').style.display = 'block';
+    }
+
+    function generateSchemaPreview() {
+        const dbName = document.getElementById('db_name').value || 'untitled_database';
+        const schema = {
+            database_name: dbName,
+            tables: {}
+        };
+        
+        for (let i = 1; i <= tableCount; i++) {
+            const tableNameInput = document.querySelector(`input[name="table_name_${i}"]`);
+            const tableName = tableNameInput ? tableNameInput.value || `table_${i}` : `table_${i}`;
+            
+            schema.tables[tableName] = {
+                fields: {}
+            };
+            
+            const fieldCount = parseInt(document.getElementById(`field_count_${i}`).value) || 0;
+            for (let j = 1; j <= fieldCount; j++) {
+                const fieldNameInput = document.querySelector(`input[name="field_name_${i}_${j}"]`);
+                const fieldTypeSelect = document.querySelector(`select[name="field_type_${i}_${j}"]`);
+                
+                if (fieldNameInput && fieldTypeSelect) {
+                    const fieldName = fieldNameInput.value || `field_${j}`;
+                    const fieldType = fieldTypeSelect.value || 'string';
+                    schema.tables[tableName].fields[fieldName] = fieldType;
+                }
+            }
+        }
+        
+        return schema;
+    }
+
+    function closeModal() {
+        document.getElementById('schema-modal').style.display = 'none';
+    }
+
+    // Form validation
+    document.getElementById('createDbForm').addEventListener('submit', function(e) {
+        const dbName = document.getElementById('db_name').value.trim();
+        if (!dbName) {
+            e.preventDefault();
+            alert('Please enter a database name.');
+            return;
+        }
+        
+        // Check if all tables have names
+        let allTablesNamed = true;
+        for (let i = 1; i <= tableCount; i++) {
+            const tableNameInput = document.querySelector(`input[name="table_name_${i}"]`);
+            if (!tableNameInput || !tableNameInput.value.trim()) {
+                allTablesNamed = false;
+                break;
+            }
+        }
+        
+        if (!allTablesNamed) {
+            e.preventDefault();
+            alert('Please provide names for all tables.');
+            return;
+        }
+        
+        // Update table count before submission
+        updateTableCountInput();
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('schema-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+</script>
+
 {% endblock %}

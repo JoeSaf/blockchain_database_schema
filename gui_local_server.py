@@ -111,8 +111,7 @@ def get_database_items(db_name):
 
 if __name__ == "__main__":
     print("Starting combined server on port 1337...")
-    print("DB GUI available at: http://localhost:1337/")
-    print("Blockchain dashboard: http://localhost:1337/blockchain") # it should really serve here not on just the port
+    print("Blockchain dashboard: http://localhost:1337/blockchain") 
     print("Blockchain API endpoints:")
     print("  GET  /api/chain   - Get the entire blockchain")
     print("  POST /api/add     - Add a new block (requires JSON data)")

@@ -1,25 +1,653 @@
 {% extends "layout.html" %}
 
-{% block title %}Databases{% endblock %}
+{% block title %}Home - Blockchain Database System{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Available Databases</h2>
-    {% if databases %}
-    <ul>
-        {% for db in databases %}
-        <li>
-            <a href="{{ url_for('list_tables', db_name=db.name) }}">{{ db.name }}</a>
-            <small>(Owner: {{ db.owner }}, Created: {{ db.created_at }})</small>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No databases available.</p>
-    {% endif %}
-    
-    {% if session.role == 'admin' %}
-    <a href="{{ url_for('create_database') }}" class="btn">Create New Database</a>
-    {% endif %}
+<style>
+    .home-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .welcome-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 40px 30px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .welcome-title {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .welcome-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 20px;
+    }
+
+    .user-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: 25px;
+        backdrop-filter: blur(10px);
+    }
+
+    .user-role {
+        background: rgba(255, 255, 255, 0.3);
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        text-align: center;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .main-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .databases-section {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .database-grid {
+        display: grid;
+        gap: 20px;
+    }
+
+    .database-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .database-card:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+        transform: translateY(-2px);
+    }
+
+    .database-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .database-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .database-owner {
+        background: #667eea;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .database-meta {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+
+    .database-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .quick-actions {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .action-grid {
+        display: grid;
+        gap: 15px;
+    }
+
+    .action-button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #333;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .action-button:hover {
+        background: #667eea;
+        color: white;
+        transform: translateX(5px);
+    }
+
+    .action-icon {
+        font-size: 1.5rem;
+        width: 30px;
+        text-align: center;
+    }
+
+    .recent-activity {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+
+    .activity-icon {
+        font-size: 1.2rem;
+        color: #667eea;
+        width: 20px;
+        text-align: center;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 2px;
+    }
+
+    .activity-time {
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .empty-subtitle {
+        margin-bottom: 25px;
+        line-height: 1.5;
+    }
+
+    .search-box {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 45px 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+    }
+
+    @media (max-width: 968px) {
+        .main-content {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .welcome-title {
+            font-size: 2rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .home-container {
+            padding: 15px;
+        }
+
+        .welcome-header {
+            padding: 25px 20px;
+        }
+
+        .databases-section,
+        .quick-actions,
+        .recent-activity {
+            padding: 20px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .database-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="home-container">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h1 class="welcome-title">🏠 Welcome to Blockchain Database System</h1>
+        <p class="welcome-subtitle">Secure, decentralized database management powered by blockchain technology</p>
+        {% if session.username %}
+        <div class="user-info">
+            <span>👋 Hello, <strong>{{ session.username }}</strong></span>
+            <span class="user-role">{{ session.role|title }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">🗄️</div>
+            <div class="stat-value" id="total-databases">{{ databases|length }}</div>
+            <div class="stat-label">Total Databases</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" id="accessible-databases">
+                {% if session.role == 'admin' %}
+                    {{ databases|length }}
+                {% else %}
+                    {{ databases|selectattr('owner', 'equalto', session.username)|list|length }}
+                {% endif %}
+            </div>
+            <div class="stat-label">Accessible to You</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⛓️</div>
+            <div class="stat-value" id="blockchain-blocks">-</div>
+            <div class="stat-label">Blockchain Blocks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔐</div>
+            <div class="stat-value">✅</div>
+            <div class="stat-label">System Status</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Databases Section -->
+        <div class="databases-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span>🗄️</span>
+                    <span>Your Databases</span>
+                </h2>
+                {% if session.role == 'admin' %}
+                <a href="{{ url_for('create_database') }}" class="btn btn-success">
+                    ➕ Create Database
+                </a>
+                {% endif %}
+            </div>
+
+            {% if databases %}
+                <!-- Search Box -->
+                <div class="search-box">
+                    <input type="text" id="database-search" class="search-input" placeholder="Search databases...">
+                    <span class="search-icon">🔍</span>
+                </div>
+
+                <!-- Database Grid -->
+                <div class="database-grid" id="database-grid">
+                    {% for db in databases %}
+                    <div class="database-card" data-name="{{ db.name|lower }}" data-owner="{{ db.owner|lower }}">
+                        <div class="database-header">
+                            <h3 class="database-name">{{ db.name }}</h3>
+                            <span class="database-owner">{{ db.owner }}</span>
+                        </div>
+                        <div class="database-meta">
+                            📅 Created: {{ db.created_at }}
+                            {% if db.owner == session.username %}
+                            <span style="color: #2ecc71; font-weight: 500;">• Owner</span>
+                            {% endif %}
+                        </div>
+                        <div class="database-actions">
+                            <a href="{{ url_for('list_tables', db_name=db.name) }}" class="btn btn-primary btn-small">
+                                👁️ View Tables
+                            </a>
+                            {% if session.role == 'admin' or db.owner == session.username %}
+                            <a href="{{ url_for('list_tables', db_name=db.name) }}" class="btn btn-secondary btn-small">
+                                ⚙️ Manage
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <div class="empty-icon">🗄️</div>
+                    <h3 class="empty-title">No Databases Found</h3>
+                    <p class="empty-subtitle">
+                        {% if session.role == 'admin' %}
+                        Get started by creating your first blockchain database.<br>
+                        Design custom tables and fields to store your data securely.
+                        {% else %}
+                        No databases are currently accessible to your account.<br>
+                        Contact an administrator to get access to databases.
+                        {% endif %}
+                    </p>
+                    {% if session.role == 'admin' %}
+                    <a href="{{ url_for('create_database') }}" class="btn btn-success">
+                        🚀 Create Your First Database
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span>⚡</span>
+                        <span>Quick Actions</span>
+                    </h3>
+                </div>
+                <div class="action-grid">
+                    {% if session.role == 'admin' %}
+                    <a href="{{ url_for('create_database') }}" class="action-button">
+                        <span class="action-icon">➕</span>
+                        <span>Create Database</span>
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('blockchain_dashboard') }}" class="action-button">
+                        <span class="action-icon">⛓️</span>
+                        <span>Blockchain Explorer</span>
+                    </a>
+                    <a href="{{ url_for('home') }}" class="action-button" onclick="refreshPage()">
+                        <span class="action-icon">🔄</span>
+                        <span>Refresh Data</span>
+                    </a>
+                    <a href="#" class="action-button" onclick="showSystemInfo()">
+                        <span class="action-icon">ℹ️</span>
+                        <span>System Info</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="action-button">
+                        <span class="action-icon">🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <span>📈</span>
+                        <span>Recent Activity</span>
+                    </h3>
+                </div>
+                <div class="activity-list" id="activity-list">
+                    <div class="activity-item">
+                        <span class="activity-icon">🔐</span>
+                        <div class="activity-content">
+                            <div class="activity-title">Logged in successfully</div>
+                            <div class="activity-time">Just now</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-icon">⛓️</span>
+                        <div class="activity-content">
+                            <div class="activity-title">Blockchain integrity verified</div>
+                            <div class="activity-time">2 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-icon">🗄️</span>
+                        <div class="activity-content">
+                            <div class="activity-title">Database system online</div>
+                            <div class="activity-time">5 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    // Search functionality
+    document.getElementById('database-search').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const databaseCards = document.querySelectorAll('.database-card');
+        
+        databaseCards.forEach(card => {
+            const name = card.dataset.name;
+            const owner = card.dataset.owner;
+            const isVisible = name.includes(searchTerm) || owner.includes(searchTerm);
+            card.style.display = isVisible ? 'block' : 'none';
+        });
+    });
+
+    // Load blockchain stats
+    async function loadBlockchainStats() {
+        try {
+            const response = await fetch('/api/status');
+            const data = await response.json();
+            
+            if (data.chain_length) {
+                document.getElementById('blockchain-blocks').textContent = data.chain_length;
+            }
+        } catch (error) {
+            console.error('Failed to load blockchain stats:', error);
+            document.getElementById('blockchain-blocks').textContent = 'Error';
+        }
+    }
+
+    // Refresh page function
+    function refreshPage() {
+        window.location.reload();
+    }
+
+    // Show system info
+    function showSystemInfo() {
+        alert(`Blockchain Database System\n\nUser: {{ session.username }}\nRole: {{ session.role }}\nDatabases: {{ databases|length }}\nStatus: Online`);
+    }
+
+    // Load stats on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadBlockchainStats();
+        
+        // Auto-refresh stats every 30 seconds
+        setInterval(loadBlockchainStats, 30000);
+    });
+
+    // Add click handlers for database cards
+    document.querySelectorAll('.database-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Don't trigger if clicking on buttons
+            if (!e.target.closest('.btn')) {
+                const dbName = this.querySelector('.database-name').textContent;
+                window.location.href = `/tables/${dbName}`;
+            }
+        });
+    });
+</script>
+
 {% endblock %}

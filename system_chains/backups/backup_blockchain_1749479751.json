@@ -575,16 +575,5 @@
         },
         "previous_hash": "da0d78ee526e2faae2f5c4bd0727e7667709c89b1efa79c3ab44526396357bf4",
         "hash": "5ee86994c5a836c92c8176d9a0e60c315a597943c84c1a740f0a5d2e9f90fe2c"
-    },
-    {
-        "index": 50,
-        "timestamp": 1749479751.4354,
-        "data": {
-            "action": "authenticate",
-            "username": "admin",
-            "timestamp": 1749479751.435396
-        },
-        "previous_hash": "5ee86994c5a836c92c8176d9a0e60c315a597943c84c1a740f0a5d2e9f90fe2c",
-        "hash": "aacad9ce9f9b2e3ae988aa7bb4f7e9281e9b42efb49a2e01c8b26c58a9dc18d5"
     }
 ]

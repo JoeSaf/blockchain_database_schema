@@ -3,147 +3,685 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blockchain Database GUI - {% block title %}{% endblock %}</title>
+    <title>{% block title %}Blockchain Database System{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⛓️</text></svg>">
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        /* Reset and Base Styles */
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f5f5f5;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Navigation Styles */
         header {
-            background-color: #333;
-            color: white;
-            padding: 1rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
+
         nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 15px 30px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        nav .logo {
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             font-size: 1.5rem;
             font-weight: bold;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s ease;
         }
-        nav ul {
+
+        .logo:hover {
+            transform: scale(1.05);
+            color: #667eea;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
             display: flex;
             list-style-type: none;
             margin: 0;
             padding: 0;
+            gap: 8px;
         }
-        nav ul li {
-            margin-left: 1rem;
+
+        .nav-links li {
+            position: relative;
         }
-        nav ul li a {
-            color: white;
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #333;
             text-decoration: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        nav ul li a:hover {
-            text-decoration: underline;
-        }
-        main {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
-        .card {
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .flash-messages {
-            margin-bottom: 1rem;
-        }
-        .flash-message {
-            padding: 0.5rem 1rem;
-            border-radius: 3px;
-            margin-bottom: 0.5rem;
-        }
-        .flash-message.success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .flash-message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        table {
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
             width: 100%;
-            border-collapse: collapse;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: left 0.3s ease;
+            z-index: -1;
         }
-        table th, table td {
-            padding: 0.5rem;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+
+        .nav-link:hover::before {
+            left: 0;
         }
-        table th {
-            background-color: #f2f2f2;
-        }
-        .btn {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background-color: #333;
+
+        .nav-link:hover {
             color: white;
-            text-decoration: none;
-            border-radius: 3px;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .user-info:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-role.admin {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        /* Mobile Navigation */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
             border: none;
+            font-size: 1.5rem;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.3s ease;
         }
+
+        .mobile-menu-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* Main Content */
+        main {
+            min-height: calc(100vh - 80px);
+            padding: 0;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 30px 0;
+        }
+
+        .flash-message {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .flash-message.success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .flash-message.error {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .flash-message.info {
+            background: linear-gradient(135deg, #cce7ff, #b3d9ff);
+            color: #004085;
+            border: 1px solid #b3d9ff;
+        }
+
+        .flash-message.warning {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .flash-icon {
+            font-size: 1.2rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            margin-top: 40px;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #667eea;
+        }
+
+        /* Utility Classes */
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
         .btn:hover {
-            background-color: #555;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
         .btn-danger {
-            background-color: #dc3545;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
         }
-        .btn-danger:hover {
-            background-color: #c82333;
+
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
         }
-        form label {
-            display: block;
-            margin-bottom: 0.5rem;
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
         }
-        form input, form select {
-            width: 100%;
-            padding: 0.5rem;
-            margin-bottom: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 3px;
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px 20px;
+                flex-wrap: wrap;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(255, 255, 255, 0.98);
+                backdrop-filter: blur(10px);
+                flex-direction: column;
+                padding: 20px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                border-radius: 0 0 15px 15px;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .user-info {
+                padding: 6px 12px;
+            }
+
+            .user-details {
+                display: none;
+            }
+
+            .flash-messages {
+                padding: 15px 20px 0;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-links {
+                justify-content: center;
+            }
         }
-        .form-section {
-            margin-bottom: 1.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #eee;
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .nav-links {
+                padding: 15px;
+            }
+
+            .flash-message {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Indicators */
+        .status-online {
+            color: #2ecc71;
+        }
+
+        .status-offline {
+            color: #e74c3c;
+        }
+
+        .status-warning {
+            color: #f39c12;
+        }
+
+        /* Notification Badge */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo">Blockchain DB</div>
-            <ul>
-                {% if session.username %}
-                <li><a href="{{ url_for('home') }}">Home</a></li>
+            <a href="{{ url_for('home') if session.username else url_for('login') }}" class="logo">
+                <span class="logo-icon">⛓️</span>
+                <span>Blockchain DB</span>
+            </a>
+            
+            {% if session.username %}
+            <ul class="nav-links" id="nav-links">
+                <li><a href="{{ url_for('home') }}" class="nav-link">
+                    <span>🏠</span>
+                    <span>Home</span>
+                </a></li>
+                <li><a href="{{ url_for('blockchain_dashboard') }}" class="nav-link">
+                    <span>⛓️</span>
+                    <span>Dashboard</span>
+                </a></li>
                 {% if session.role == 'admin' %}
-                <li><a href="{{ url_for('create_database') }}">Create Database</a></li>
+                <li><a href="{{ url_for('create_database') }}" class="nav-link">
+                    <span>➕</span>
+                    <span>Create DB</span>
+                </a></li>
                 {% endif %}
-                <li><a href="{{ url_for('logout') }}">Logout ({{ session.username }})</a></li>
-                {% else %}
-                <li><a href="{{ url_for('get_chain') }}">Login</a></li>
-                {% endif %}
+                <li><a href="#" class="nav-link" onclick="showSystemStatus()">
+                    <span>📊</span>
+                    <span>Status</span>
+                    <span class="notification-badge" id="status-badge" style="display: none;">!</span>
+                </a></li>
             </ul>
+
+            <div class="user-menu">
+                <div class="user-info">
+                    <div class="user-avatar">{{ session.username[0]|upper }}</div>
+                    <div class="user-details">
+                        <span class="username">{{ session.username }}</span>
+                        <span class="user-role {{ session.role }}">{{ session.role }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <span>🚪</span>
+                    <span class="logout-text">Logout</span>
+                </a>
+            </div>
+
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <span id="menu-icon">☰</span>
+            </button>
+            {% else %}
+            <ul class="nav-links">
+                <li><a href="{{ url_for('login') }}" class="nav-link">
+                    <span>🔐</span>
+                    <span>Login</span>
+                </a></li>
+            </ul>
+            {% endif %}
         </nav>
     </header>
     
     <main>
         <div class="flash-messages">
-            {% for message in get_flashed_messages() %}
-            <div class="flash-message">{{ message }}</div>
-            {% endfor %}
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="flash-message {{ 'success' if 'success' in message.lower() or 'welcome' in message.lower() or 'created' in message.lower() else 'error' if 'error' in message.lower() or 'failed' in message.lower() or 'wrong' in message.lower() else 'info' }}">
+                        <span class="flash-icon">
+                            {% if 'success' in message.lower() or 'welcome' in message.lower() or 'created' in message.lower() %}
+                                ✅
+                            {% elif 'error' in message.lower() or 'failed' in message.lower() or 'wrong' in message.lower() %}
+                                ❌
+                            {% else %}
+                                ℹ️
+                            {% endif %}
+                        </span>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
         </div>
         
         {% block content %}{% endblock %}
     </main>
+
+    <footer>
+        <div class="footer-content">
+            <div>
+                <span>© 2025 Blockchain Database System</span>
+                <span class="status-online" id="system-status">● Online</span>
+            </div>
+            <ul class="footer-links">
+                {% if session.username %}
+                <li><a href="{{ url_for('blockchain_dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('home') }}">Databases</a></li>
+                {% if session.role == 'admin' %}
+                <li><a href="{{ url_for('create_database') }}">Create DB</a></li>
+                {% endif %}
+                {% endif %}
+                <li><a href="#" onclick="showAbout()">About</a></li>
+                <li><a href="#" onclick="showHelp()">Help</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const navLinks = document.getElementById('nav-links');
+            const menuIcon = document.getElementById('menu-icon');
+            
+            navLinks.classList.toggle('active');
+            menuIcon.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
+        }
+
+        // System status check
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('system-status');
+                const statusBadge = document.getElementById('status-badge');
+                
+                if (data.status === 'healthy') {
+                    statusElement.innerHTML = '● Online';
+                    statusElement.className = 'status-online';
+                    if (statusBadge) statusBadge.style.display = 'none';
+                } else {
+                    statusElement.innerHTML = '● Issues Detected';
+                    statusElement.className = 'status-warning';
+                    if (statusBadge) statusBadge.style.display = 'block';
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('system-status');
+                const statusBadge = document.getElementById('status-badge');
+                statusElement.innerHTML = '● Offline';
+                statusElement.className = 'status-offline';
+                if (statusBadge) statusBadge.style.display = 'block';
+            }
+        }
+
+        // Show system status modal
+        function showSystemStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const status = data.status === 'healthy' ? '✅ Healthy' : '⚠️ Issues Detected';
+                    const info = `System Status\n\nStatus: ${status}\nBlocks: ${data.chain_length}\nUsers: ${data.unique_users || 'N/A'}\nDatabases: ${data.total_databases || 'N/A'}`;
+                    alert(info);
+                })
+                .catch(error => {
+                    alert('System Status\n\n❌ Unable to retrieve status\nError: Connection failed');
+                });
+        }
+
+        // Show about modal
+        function showAbout() {
+            alert(`Blockchain Database System v1.0\n\nA secure, decentralized database management system powered by blockchain technology.\n\nFeatures:\n• Blockchain-backed data integrity\n• User authentication & authorization\n• Real-time dashboard\n• Secure data storage`);
+        }
+
+        // Show help modal
+        function showHelp() {
+            const helpText = {% if session.username %}
+                `Quick Help\n\n🏠 Home - View and manage your databases\n⛓️ Dashboard - Monitor blockchain status\n{{ '➕ Create DB - Create new databases' if session.role == 'admin' else '' }}\n📊 Status - Check system health\n\nNeed more help? Contact your system administrator.`;
+            {% else %}
+                `Quick Help\n\n🔐 Login - Access your account\n\nFor support, contact your system administrator.`;
+            {% endif %}
+            alert(helpText);
+        }
+
+        // Auto-update active nav link
+        function updateActiveNavLink() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href');
+                if (href && (currentPath === href || (currentPath.startsWith(href) && href !== '/'))) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateActiveNavLink();
+            {% if session.username %}
+            checkSystemStatus();
+            // Auto-refresh system status every 60 seconds
+            setInterval(checkSystemStatus, 60000);
+            {% endif %}
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const nav = document.querySelector('nav');
+            const navLinks = document.getElementById('nav-links');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (!nav.contains(event.target) && navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+                document.getElementById('menu-icon').textContent = '☰';
+            }
+        });
+
+        // Auto-hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    message.style.animation = 'slideOut 0.3s ease-in forwards';
+                    setTimeout(() => {
+                        if (message.parentNode) {
+                            message.parentNode.removeChild(message);
+                        }
+                    }, 300);
+                }, 5000);
+            });
+        });
+
+        // Add slide out animation
+        const slideOutKeyframes = `
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(-100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        
+        const style = document.createElement('style');
+        style.textContent = slideOutKeyframes;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>
