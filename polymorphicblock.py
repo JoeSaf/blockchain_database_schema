@@ -1,3 +1,5 @@
+# polymorphicblock.py - Complete Updated Version with Centralized Management Integration
+
 import json
 import os
 import getpass
@@ -13,64 +15,25 @@ from polymorphic_adjuster import BlockAdjuster
 import shutil
 from pathlib import Path
 
+# Import centralized management and compatibility layer
+try:
+    from centralized_chain_management import ChainDirectoryManager
+    from compatibility_layer import CompatibilityManager, get_blockchain_path, initialize_compatibility
+    CENTRALIZED_AVAILABLE = True
+except ImportError:
+    print("⚠️  [WARNING] Centralized management not available, using legacy mode")
+    CENTRALIZED_AVAILABLE = False
+    get_blockchain_path = lambda: "blockchain_db.json"
 
+# Initialize compatibility layer if available
+if CENTRALIZED_AVAILABLE:
+    print("🔄 [INIT] Initializing centralized blockchain management...")
+    initialize_compatibility()
+    BLOCKCHAIN_DB = get_blockchain_path()
+else:
+    BLOCKCHAIN_DB = "blockchain_db.json"
 
-class ChainDirectoryManager:
-    def __init__(self, base_dir="system_chains"):
-        self.base_dir = Path(base_dir)
-        self.setup_directory_structure()
-    
-    def setup_directory_structure(self):
-        print(f"📁 [SETUP] Creating centralized chain directory: {self.base_dir}")
-        
-        self.base_dir.mkdir(exist_ok=True)
-        
-        self.subdirs = {
-            'active': self.base_dir / 'active',
-            'fallbacks': self.base_dir / 'fallbacks', 
-            'quarantine': self.base_dir / 'quarantine',
-            'backups': self.base_dir / 'backups',
-            'forensics': self.base_dir / 'forensics'
-        }
-        
-        for subdir_name, subdir_path in self.subdirs.items():
-            subdir_path.mkdir(exist_ok=True)
-            print(f"  ✅ {subdir_name}: {subdir_path}")
-    
-    def get_path(self, file_type, timestamp=None):
-        if timestamp is None:
-            timestamp = int(time.time())
-        
-        base_path = self.subdirs.get(file_type, self.base_dir)
-        
-        default_names = {
-            'active': 'blockchain_db.json',
-            'fallback': f'enhanced_fallback_db_{timestamp}.json',
-            'quarantine': f'quarantined_blocks_{timestamp}.json',
-            'forensic': f'forensic_report_{timestamp}.json'
-        }
-        
-        filename = default_names[file_type]
-        return base_path / filename
-    
-    def create_backup(self, source_file):
-        source_path = Path(source_file)
-        if not source_path.exists():
-            return None
-        
-        backup_path = self.get_path('backups')
-        try:
-            shutil.copy2(str(source_path), str(backup_path))
-            print(f"💾 [BACKUP] Created: {backup_path.name}")
-            return backup_path
-        except Exception as e:
-            print(f"❌ [BACKUP FAILED] {str(e)}")
-            return None
-
-# File to store blockchain data
-# Initialize centralized chain management
-CHAIN_MANAGER = ChainDirectoryManager()
-BLOCKCHAIN_DB = str(CHAIN_MANAGER.get_path('active'))
+print(f"📁 [CONFIG] Blockchain database path: {BLOCKCHAIN_DB}")
 
 class Block:
     def __init__(self, index, timestamp, data, previous_hash):
@@ -97,8 +60,15 @@ class Block:
 
 class Blockchain:
     def __init__(self):
-        global CHAIN_MANAGER
-        self.chain_manager = CHAIN_MANAGER
+        # Initialize centralized management if available
+        if CENTRALIZED_AVAILABLE:
+            from compatibility_layer import compatibility_manager
+            self.chain_manager = compatibility_manager.chain_manager
+            self.compatibility = compatibility_manager
+        else:
+            self.chain_manager = None
+            self.compatibility = None
+        
         self.chain = []
         
         if os.path.exists(BLOCKCHAIN_DB):
@@ -126,8 +96,6 @@ class Blockchain:
         self.chain.append(new_block)
         self.save_chain()
     
-# Add this enhanced method to your existing Blockchain class in polymorphicblock.py
-
     def is_chain_valid(self):
         """
         Enhanced chain validation that identifies specific infected blocks,
@@ -208,11 +176,12 @@ class Blockchain:
 
     def _create_enhanced_fallback_response(self, infected_blocks):
         """
-        Enhanced fallback response that creates a clean chain excluding infected blocks
+        Enhanced fallback response using centralized file management
         """
         print("\n🛡️  [QUARANTINE PROTOCOL] Creating clean fallback chain...")
         print("=" * 70)
         
+        timestamp = int(time.time())
         infected_ids = [block_info["block_id"] for block_info in infected_blocks]
         
         # Step 1: Separate clean blocks from infected blocks
@@ -248,15 +217,11 @@ class Blockchain:
         for block in clean_blocks:
             if block.data.get("action") == "register":
                 username = block.data.get("username")
-                role = block.data.get("role", "user")
-                public_key = block.data.get("public_key")
-                private_key = block.data.get("private_key")
-                
                 if username:
                     clean_users[username] = {
-                        "role": role,
-                        "public_key": public_key,
-                        "private_key": private_key,
+                        "role": block.data.get("role", "user"),
+                        "public_key": block.data.get("public_key"),
+                        "private_key": block.data.get("private_key"),
                         "migrated_at": time.time(),
                         "source_block": block.index
                     }
@@ -275,8 +240,25 @@ class Blockchain:
             "users": clean_users
         }
         
-        # Step 5: Save files
-        timestamp = int(time.time())
+        # Step 5: Save files using centralized or legacy approach
+        if self.chain_manager and self.compatibility:
+            # Use centralized management
+            self._save_centralized_fallback_files(fallback_data, infected_blocks, quarantined_blocks, timestamp)
+        else:
+            # Use legacy approach
+            self._save_legacy_fallback_files(fallback_data, infected_blocks, quarantined_blocks, timestamp)
+        
+        # Step 6: Replace current chain with clean chain
+        self.chain = clean_blocks
+        self.save_chain()  # This will save to appropriate location based on system
+        
+        print(f"\n✅ Active blockchain updated with clean chain")
+        print(f"🚫 Infected blocks stored in quarantine")
+        print(f"🛡️  System integrity restored")
+
+    def _save_centralized_fallback_files(self, fallback_data, infected_blocks, quarantined_blocks, timestamp):
+        """Save fallback files using centralized management"""
+        print("💾 [CENTRALIZED] Saving fallback files to centralized locations...")
         
         # Save enhanced fallback database
         fallback_path = self.chain_manager.get_path('fallback', timestamp=timestamp)
@@ -292,49 +274,62 @@ class Blockchain:
                 "infected_blocks": infected_blocks,
                 "quarantined_block_data": [block.to_dict() for block in quarantined_blocks]
             }, f, indent=4)
-            
-        # Save forensic report
+        
+        # Save detailed forensic report
         forensic_path = self.chain_manager.get_path('forensic', timestamp=timestamp)
         with open(forensic_path, "w") as f:
             json.dump({
                 "forensic_timestamp": time.time(),
                 "analysis_type": "Blockchain Infection Analysis",
-                "infected_blocks": infected_blocks,
-                "quarantine_actions": [f"Block #{bid} quarantined" for bid in infected_ids],
+                "summary": {
+                    "total_blocks_analyzed": len(self.chain),
+                    "infected_blocks_found": len(infected_blocks),
+                    "clean_blocks_preserved": len(fallback_data["clean_chain_length"]),
+                    "users_migrated": len(fallback_data["users"])
+                },
+                "infection_details": infected_blocks,
+                "quarantine_actions": [f"Block #{bid} quarantined" for bid in fallback_data["infected_block_ids"]],
+                "recovery_actions": [
+                    "Clean chain reconstructed",
+                    "Hash links rebuilt", 
+                    "User data migrated",
+                    "Active chain updated"
+                ],
                 "file_locations": {
                     "fallback_database": str(fallback_path),
-                    "quarantined_blocks": str(quarantine_path)
+                    "quarantined_blocks": str(quarantine_path),
+                    "storage_base": str(self.chain_manager.base_dir)
                 }
             }, f, indent=4)
-                   
-        # Save clean chain as new active blockchain
-        clean_chain_filename = f"clean_blockchain_db_{timestamp}.json"
-        with open(clean_chain_filename, "w") as f:
-            json.dump([block.to_dict() for block in clean_blocks], f, indent=4)
         
-        # Step 6: Replace current chain with clean chain
-        self.chain = clean_blocks
-        self.save_chain()  # Update the main blockchain_db.json with clean chain
-        
-        # Step 7: Summary report
-        print("\n🎉 [QUARANTINE COMPLETE] System successfully sanitized!")
-        print("=" * 70)
-        print(f"📁 Centralized storage location: {self.chain_manager.base_dir}")
-        print(f"📄 Fallback database: {fallback_path.name}")
-        print(f"🚫 Quarantine data: {quarantine_path.name}")
-        print(f"🔍 Forensic report: {forensic_path.name}")
-        print(f"📊 Statistics:")
-        print(f"   ├─ Original chain: {fallback_data['original_chain_length']} blocks")
-        print(f"   ├─ Clean chain: {fallback_data['clean_chain_length']} blocks")
-        print(f"   ├─ Quarantined: {fallback_data['quarantined_blocks_count']} blocks")
-        print(f"   └─ Users preserved: {len(clean_users)}")
+        print(f"📁 Files saved to centralized structure:")
+        print(f"   ├─ Fallback: {fallback_path.relative_to(self.chain_manager.base_dir)}")
+        print(f"   ├─ Quarantine: {quarantine_path.relative_to(self.chain_manager.base_dir)}")
+        print(f"   └─ Forensics: {forensic_path.relative_to(self.chain_manager.base_dir)}")
 
-        print(f"\n✅ Active blockchain updated with clean chain")
-        print(f"🚫 Infected blocks stored in quarantine directory")
-        print(f"🛡️  System integrity restored with centralized management")
+    def _save_legacy_fallback_files(self, fallback_data, infected_blocks, quarantined_blocks, timestamp):
+        """Save fallback files using legacy approach for backward compatibility"""
+        print("💾 [LEGACY] Saving fallback files to root directory...")
         
+        # Save fallback data
+        fallback_filename = f"enhanced_fallback_db_{timestamp}.json"
+        with open(fallback_filename, "w") as f:
+            json.dump(fallback_data, f, indent=4)
+        
+        # Save quarantined blocks
+        quarantine_filename = f"quarantined_blocks_{timestamp}.json"
+        with open(quarantine_filename, "w") as f:
+            json.dump({
+                "quarantine_timestamp": time.time(),
+                "quarantine_reason": "Blockchain infection detected",
+                "infected_blocks": infected_blocks,
+                "quarantined_block_data": [block.to_dict() for block in quarantined_blocks]
+            }, f, indent=4)
+        
+        print(f"📁 Files saved to legacy locations:")
+        print(f"   ├─ Fallback: {fallback_filename}")
+        print(f"   └─ Quarantine: {quarantine_filename}")
 
-    # Also replace the old _trigger_fallback_response method:
     def _trigger_fallback_response(self, breach_reason):
         """Legacy fallback - redirects to enhanced version"""
         print(f"🚨 [LEGACY ALERT] {breach_reason}")
@@ -378,7 +373,7 @@ class Blockchain:
     
     def rehash_chain(self):
         """Recalculate all hashes to ensure chain integrity"""
-        if len(self.chain) < 20:  # Replace with your known minimum if needed
+        if len(self.chain) < 2:  # Genesis block + at least one other
             print("WARNING: Chain size seems unexpectedly low. Aborting rehash to prevent data loss.")
             return
 
@@ -393,23 +388,28 @@ class Blockchain:
         return [block.to_dict() for block in self.chain]
     
     def save_chain(self):
-        """Save blockchain to centralized active directory with backup"""
-        global BLOCKCHAIN_DB
-        
-        # Create backup before saving new version
-        if os.path.exists(BLOCKCHAIN_DB):
-            self.chain_manager.create_backup(BLOCKCHAIN_DB)
-        
-        # Save to centralized active location
-        with open(BLOCKCHAIN_DB, "w") as f:
-            json.dump(self.to_dict(), f, indent=4)
+        """Save blockchain using appropriate method based on available systems"""
+        if self.compatibility:
+            # Use dual-write during transition
+            self.compatibility.dual_write('blockchain_db.json', self.to_dict(), 'active')
+        else:
+            # Use standard save method
+            with open(BLOCKCHAIN_DB, "w") as f:
+                json.dump(self.to_dict(), f, indent=4)
         
         print(f"💾 [SAVE] Blockchain saved to: {BLOCKCHAIN_DB}")
     
     def load_chain(self):
-        """Load blockchain from file"""
-        with open(BLOCKCHAIN_DB, "r") as f:
-            chain_data = json.load(f)
+        """Load blockchain using appropriate method based on available systems"""
+        try:
+            if self.compatibility:
+                # Use dual-read with fallback to legacy
+                chain_data = self.compatibility.dual_read('blockchain_db.json', 'active')
+            else:
+                # Use standard load method
+                with open(BLOCKCHAIN_DB, "r") as f:
+                    chain_data = json.load(f)
+            
             self.chain = []
             for block_data in chain_data:
                 block = Block(
@@ -420,6 +420,12 @@ class Blockchain:
                 )
                 block.hash = block_data["hash"]
                 self.chain.append(block)
+                
+            print(f"📖 [LOAD] Blockchain loaded from: {BLOCKCHAIN_DB}")
+            
+        except Exception as e:
+            print(f"❌ [LOAD ERROR] Failed to load blockchain: {str(e)}")
+            raise
 
 class User:
     def __init__(self, username, role, private_key=None):
@@ -688,7 +694,8 @@ def main_menu(username, user_role, auth_system, adjuster=None):
         print("5. Database Operations")
         print("6. User Item Management")
         print("7. Refresh Blockchain State")
-        print("8. Logout")
+        print("8. File System Status (New)")
+        print("9. Logout")
         choice = input("Enter option: ")
 
         if choice == "1":
@@ -731,12 +738,58 @@ def main_menu(username, user_role, auth_system, adjuster=None):
             print("Blockchain state refreshed successfully.")
             
         elif choice == "8":
+            # New option to show file system status
+            show_file_system_status(auth_system)
+            
+        elif choice == "9":
             print("Logging out...")
             break
             
         else:
             print("Invalid option or insufficient privileges!")
+
+def show_file_system_status(auth_system):
+    """Display current file system status and centralized management info"""
+    print("\n" + "="*60)
+    print("📁 FILE SYSTEM STATUS")
+    print("="*60)
+    
+    if CENTRALIZED_AVAILABLE and auth_system.blockchain.compatibility:
+        print("✅ Centralized Management: ACTIVE")
+        print(f"📂 Base Directory: {auth_system.blockchain.chain_manager.base_dir}")
+        
+        # Show directory structure
+        print("\n📋 Directory Structure:")
+        for name, path in auth_system.blockchain.chain_manager.subdirs.items():
+            file_count = len(list(path.glob('*.json'))) if path.exists() else 0
+            print(f"   ├─ {name}: {file_count} files ({path})")
+        
+        # Show current blockchain path
+        print(f"\n🔗 Active Blockchain: {BLOCKCHAIN_DB}")
+        
+        # Check for legacy files
+        legacy_files = ['blockchain_db.json', 'blockStorage.json', 'fallback_db.json']
+        legacy_found = []
+        for legacy_file in legacy_files:
+            if os.path.exists(legacy_file):
+                if Path(legacy_file).is_symlink():
+                    legacy_found.append(f"{legacy_file} (symlink)")
+                else:
+                    legacy_found.append(f"{legacy_file} (file)")
+        
+        if legacy_found:
+            print(f"\n🔗 Legacy Compatibility: {len(legacy_found)} files")
+            for file in legacy_found:
+                print(f"   ├─ {file}")
+        else:
+            print("\n✅ Legacy Cleanup: Complete")
             
+    else:
+        print("⚠️  Centralized Management: DISABLED")
+        print("📂 Using Legacy File Structure")
+        print(f"🔗 Active Blockchain: {BLOCKCHAIN_DB}")
+    
+    print("="*60)
 
 def database_menu(username, user_role, auth_system):
     """Database operations menu"""
@@ -1017,23 +1070,26 @@ def user_item_menu(username, auth_system):
                     # Option to view item content
                     view_item = input("\nView an item? (y/n): ").lower()
                     if view_item == 'y':
-                        item_idx = int(input("Select item number: ")) - 1
-                        if item_idx >= 0 and item_idx < len(items):
-                            item_path = os.path.join(user_folder, items[item_idx])
-                            try:
-                                # Check if it's a text-based file
-                                if item_path.endswith(('.txt', '.json', '.py')):
-                                    with open(item_path, "r") as f:
-                                        content = f.read()
-                                        print(f"\nContent of '{items[item_idx]}':")
-                                        print(content)
-                                else:
-                                    print(f"\nFile '{items[item_idx]}' is not a text file and cannot be displayed.")
-                                    print(f"File path: {item_path}")
-                            except Exception as e:
-                                print(f"Error reading item: {str(e)}")
-                        else:
-                            print("Invalid selection.")
+                        try:
+                            item_idx = int(input("Select item number: ")) - 1
+                            if item_idx >= 0 and item_idx < len(items):
+                                item_path = os.path.join(user_folder, items[item_idx])
+                                try:
+                                    # Check if it's a text-based file
+                                    if item_path.endswith(('.txt', '.json', '.py')):
+                                        with open(item_path, "r") as f:
+                                            content = f.read()
+                                            print(f"\nContent of '{items[item_idx]}':")
+                                            print(content)
+                                    else:
+                                        print(f"\nFile '{items[item_idx]}' is not a text file and cannot be displayed.")
+                                        print(f"File path: {item_path}")
+                                except Exception as e:
+                                    print(f"Error reading item: {str(e)}")
+                            else:
+                                print("Invalid selection.")
+                        except ValueError:
+                            print("Invalid input. Please enter a number.")
                 else:
                     print(f"No items found for user '{username}'.")
             else:

@@ -1,3 +1,5 @@
+# blockchain_databases.py - Updated with Centralized Management Support
+
 import json
 import os
 import hashlib
@@ -12,9 +14,19 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import hashes, serialization
 from file_upload_ui import FileUploadDialog
 
-# File paths for database storage
-BLOCKSTOR = "blockStorage.json"
-BLOCKCHAIN_DB = "blockchain_db.json"
+# Import centralized management with fallback
+try:
+    from compatibility_layer import get_block_storage_path, compatibility_manager
+    CENTRALIZED_AVAILABLE = True
+    BLOCKSTOR = get_block_storage_path()
+except ImportError:
+    print("⚠️  [DB WARNING] Centralized management not available for databases, using legacy mode")
+    CENTRALIZED_AVAILABLE = False
+    BLOCKSTOR = "blockStorage.json"
+
+BLOCKCHAIN_DB = "blockchain_db.json"  # This will be updated by compatibility layer
+
+print(f"📁 [DB CONFIG] Database storage path: {BLOCKSTOR}")
 
 class DatabaseBlock:
     def __init__(self, index, timestamp, data, storpath, previous_hash):
@@ -43,15 +55,30 @@ class DatabaseBlock:
         }
         
 class DatabaseStorage:
-    """Blockchain-based database storage system"""
+    """Blockchain-based database storage system with centralized management support"""
     
     def __init__(self):
-        if os.path.exists(BLOCKSTOR):
+        # Initialize centralized management if available
+        self.compatibility = compatibility_manager if CENTRALIZED_AVAILABLE else None
+        
+        if self._database_file_exists():
             self.load_chain()
         else:
             self.chain = [self.create_genesis_block()]
             self.save_chain()
         
+    def _database_file_exists(self):
+        """Check if database file exists using appropriate method"""
+        if self.compatibility:
+            try:
+                # Try to read using centralized system
+                self.compatibility.dual_read('blockStorage.json', 'active')
+                return True
+            except FileNotFoundError:
+                return False
+        else:
+            return os.path.exists(BLOCKSTOR)
+    
     def create_genesis_block(self):
         return DatabaseBlock(0, time.time(), {"action": "genesis", "message": "Genesis Database Block"}, "", "0")
     
@@ -80,21 +107,48 @@ class DatabaseStorage:
         return True
     
     def _trigger_alert(self, message):
-        print(f"WARNING: {message}")
-        # You could integrate with the polymorphic security system here
+        print(f"🚨 [DB WARNING] {message}")
+        # Log to centralized forensics if available
+        if self.compatibility and hasattr(self.compatibility, 'chain_manager'):
+            try:
+                forensic_path = self.compatibility.chain_manager.get_path('forensic')
+                alert_data = {
+                    "timestamp": time.time(),
+                    "alert_type": "Database Chain Alert",
+                    "message": message,
+                    "source": "DatabaseStorage"
+                }
+                with open(forensic_path, 'a') as f:
+                    f.write(json.dumps(alert_data) + '\n')
+            except Exception as e:
+                print(f"Failed to log alert to forensics: {str(e)}")
         
     def to_dict(self):
         return [block.to_dict() for block in self.chain]
     
     def save_chain(self):
-        """Saves the chain into the json based db"""
-        with open(BLOCKSTOR, "w") as f:
-            json.dump(self.to_dict(), f, indent=4)
+        """Saves the chain using appropriate method"""
+        if self.compatibility:
+            # Use dual-write during transition
+            self.compatibility.dual_write('blockStorage.json', self.to_dict(), 'active')
+        else:
+            # Use legacy method
+            with open(BLOCKSTOR, "w") as f:
+                json.dump(self.to_dict(), f, indent=4)
+        
+        print(f"💾 [DB SAVE] Database chain saved to: {BLOCKSTOR}")
             
     def load_chain(self):
-        """Loads the chain from file"""
-        with open(BLOCKSTOR, "r") as f:
-            chain_data = json.load(f)
+        """Loads the chain using appropriate method"""
+        try:
+            if self.compatibility:
+                # Use dual-read with fallback
+                chain_data = self.compatibility.dual_read('blockStorage.json', 'active')
+            else:
+                # Use legacy method
+                with open(BLOCKSTOR, "r") as f:
+                    chain_data = json.load(f)
+            
             self.chain = []
             for block_data in chain_data:
                 block = DatabaseBlock(
@@ -106,6 +160,12 @@ class DatabaseStorage:
                 )
                 block.hash = block_data["hash"]
                 self.chain.append(block)
+                
+            print(f"📖 [DB LOAD] Database chain loaded from: {BLOCKSTOR}")
+            
+        except Exception as e:
+            print(f"❌ [DB LOAD ERROR] Failed to load database chain: {str(e)}")
+            raise
     
     def create_database(self, name, schema, owner):
         """Create a new database with the given schema"""
@@ -228,9 +288,8 @@ class DatabaseStorage:
         
         return items
 
-
 class DatabaseManager:
-    """Interface for managing blockchain databases"""
+    """Interface for managing blockchain databases with centralized support"""
     
     def __init__(self, auth_system):
         self.db_storage = DatabaseStorage()
@@ -239,6 +298,16 @@ class DatabaseManager:
         # Ensure databases directory exists
         if not os.path.exists("databases"):
             os.makedirs("databases")
+            
+        # Check system status
+        self._check_system_status()
+    
+    def _check_system_status(self):
+        """Check and report system integration status"""
+        if CENTRALIZED_AVAILABLE and self.db_storage.compatibility:
+            print("✅ [DB INIT] Database system integrated with centralized management")
+        else:
+            print("⚠️  [DB INIT] Database system running in legacy mode")
     
     def create_database(self, name, schema, username):
         """Create a new database with the given schema"""
@@ -398,6 +467,57 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error adding user to database: {str(e)}")
             return False
+    
+    def get_system_status(self):
+        """Get detailed system status for diagnostics"""
+        status = {
+            "centralized_management": CENTRALIZED_AVAILABLE,
+            "database_chain_length": len(self.db_storage.chain),
+            "database_chain_valid": self.db_storage.is_chain_valid(),
+            "storage_path": BLOCKSTOR,
+            "total_databases": len(self.db_storage.list_databases())
+        }
+        
+        if CENTRALIZED_AVAILABLE and self.db_storage.compatibility:
+            try:
+                status["centralized_base_dir"] = str(self.db_storage.compatibility.chain_manager.base_dir)
+                status["migration_complete"] = self.db_storage.compatibility.migration_complete
+            except Exception as e:
+                status["centralized_error"] = str(e)
+        
+        return status
+    
+    def verify_database_integrity(self):
+        """Verify integrity of database blockchain"""
+        print("\n🔍 [DB VERIFICATION] Checking database blockchain integrity...")
+        
+        is_valid = self.db_storage.is_chain_valid()
+        
+        if is_valid:
+            print("✅ [DB INTEGRITY] Database blockchain is valid")
+        else:
+            print("🚨 [DB INTEGRITY] Database blockchain integrity compromised!")
+            
+            # If centralized management is available, create forensic report
+            if CENTRALIZED_AVAILABLE and self.db_storage.compatibility:
+                try:
+                    forensic_path = self.db_storage.compatibility.chain_manager.get_path('forensic')
+                    forensic_data = {
+                        "timestamp": time.time(),
+                        "event_type": "Database Blockchain Integrity Failure",
+                        "chain_length": len(self.db_storage.chain),
+                        "databases_affected": [db["name"] for db in self.db_storage.list_databases()]
+                    }
+                    
+                    with open(forensic_path, 'w') as f:
+                        json.dump(forensic_data, f, indent=4)
+                    
+                    print(f"📋 [FORENSICS] Report saved to: {forensic_path}")
+                    
+                except Exception as e:
+                    print(f"⚠️  [FORENSICS] Failed to save report: {str(e)}")
+        
+        return is_valid
 
 # Initialize database folder
 def initialize_database_folders():
@@ -415,6 +535,12 @@ def initialize_database_folders():
     if not os.path.exists(userData_path):
         os.makedirs(userData_path)
         print(f"Created userData directory at {os.path.abspath(userData_path)}")
+    
+    # Check centralized management status
+    if CENTRALIZED_AVAILABLE:
+        print("✅ [DB FOLDERS] Initialized with centralized management support")
+    else:
+        print("⚠️  [DB FOLDERS] Initialized in legacy mode")
     
     return database_path
 

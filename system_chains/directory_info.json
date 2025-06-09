@@ -1,0 +1,21 @@
+{
+    "created_at": 1749472204.3663816,
+    "created_timestamp": "2025-06-09 15:30:04",
+    "description": "Centralized blockchain file management system",
+    "directory_structure": {
+        "active": "Current active blockchain files",
+        "fallbacks": "Fallback databases created during security events",
+        "quarantine": "Quarantined/infected blocks for forensic analysis",
+        "backups": "Regular chain backups and snapshots",
+        "forensics": "Detailed forensic analysis and security reports",
+        "archives": "Historical blockchain versions and migrations",
+        "temp": "Temporary files during processing operations"
+    },
+    "file_naming_conventions": {
+        "active_chain": "blockchain_db.json",
+        "fallback": "enhanced_fallback_db_{timestamp}.json",
+        "quarantine": "quarantined_blocks_{timestamp}.json",
+        "backup": "backup_blockchain_{timestamp}.json",
+        "forensic": "forensic_report_{timestamp}.json"
+    }
+}
