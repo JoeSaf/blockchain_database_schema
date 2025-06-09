@@ -118,7 +118,7 @@ class BlockAdjuster:
         def loop():
             while True:
                 # We'll reorder blocks 1-9 to preserve the genesis block
-                self.safely_reorder_blocks(start_index=1, count=11)
+                self.safely_reorder_blocks(start_index=1, count=21)
                 time.sleep(interval)
                 
         # Start the timer in a background thread

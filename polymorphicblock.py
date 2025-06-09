@@ -11,11 +11,66 @@ from cryptography.hazmat.primitives import hashes, serialization
 import blockchain_databases
 from polymorphic_adjuster import BlockAdjuster
 import shutil
+from pathlib import Path
+
+
+
+class ChainDirectoryManager:
+    def __init__(self, base_dir="system_chains"):
+        self.base_dir = Path(base_dir)
+        self.setup_directory_structure()
+    
+    def setup_directory_structure(self):
+        print(f"📁 [SETUP] Creating centralized chain directory: {self.base_dir}")
+        
+        self.base_dir.mkdir(exist_ok=True)
+        
+        self.subdirs = {
+            'active': self.base_dir / 'active',
+            'fallbacks': self.base_dir / 'fallbacks', 
+            'quarantine': self.base_dir / 'quarantine',
+            'backups': self.base_dir / 'backups',
+            'forensics': self.base_dir / 'forensics'
+        }
+        
+        for subdir_name, subdir_path in self.subdirs.items():
+            subdir_path.mkdir(exist_ok=True)
+            print(f"  ✅ {subdir_name}: {subdir_path}")
+    
+    def get_path(self, file_type, timestamp=None):
+        if timestamp is None:
+            timestamp = int(time.time())
+        
+        base_path = self.subdirs.get(file_type, self.base_dir)
+        
+        default_names = {
+            'active': 'blockchain_db.json',
+            'fallback': f'enhanced_fallback_db_{timestamp}.json',
+            'quarantine': f'quarantined_blocks_{timestamp}.json',
+            'forensic': f'forensic_report_{timestamp}.json'
+        }
+        
+        filename = default_names[file_type]
+        return base_path / filename
+    
+    def create_backup(self, source_file):
+        source_path = Path(source_file)
+        if not source_path.exists():
+            return None
+        
+        backup_path = self.get_path('backups')
+        try:
+            shutil.copy2(str(source_path), str(backup_path))
+            print(f"💾 [BACKUP] Created: {backup_path.name}")
+            return backup_path
+        except Exception as e:
+            print(f"❌ [BACKUP FAILED] {str(e)}")
+            return None
 
 # File to store blockchain data
-BLOCKCHAIN_DB = "blockchain_db.json"
-# Visible security script location
-# SECURITY_SCRIPT = "blockchain_security.py"
+# Initialize centralized chain management
+CHAIN_MANAGER = ChainDirectoryManager()
+BLOCKCHAIN_DB = str(CHAIN_MANAGER.get_path('active'))
 
 class Block:
     def __init__(self, index, timestamp, data, previous_hash):
@@ -42,6 +97,8 @@ class Block:
 
 class Blockchain:
     def __init__(self):
+        global CHAIN_MANAGER
+        self.chain_manager = CHAIN_MANAGER
         self.chain = []
         
         if os.path.exists(BLOCKCHAIN_DB):
@@ -69,57 +126,252 @@ class Blockchain:
         self.chain.append(new_block)
         self.save_chain()
     
+# Add this enhanced method to your existing Blockchain class in polymorphicblock.py
+
     def is_chain_valid(self):
+        """
+        Enhanced chain validation that identifies specific infected blocks,
+        echoes their IDs, and creates a clean fallback chain excluding infected blocks
+        """
+        print("\n🔍 [ENHANCED SECURITY SCAN] Analyzing blockchain integrity...")
+        print("=" * 70)
+        
+        infected_blocks = []
+        
+        # Scan each block for infections
+        for i in range(1, len(self.chain)):
+            current_block = self.chain[i]
+            previous_block = self.chain[i-1]
+            
+            # Check 1: Hash Integrity
+            calculated_hash = current_block.calculate_hash()
+            if current_block.hash != calculated_hash:
+                infection_info = {
+                    "block_id": current_block.index,
+                    "infection_type": "HASH_MISMATCH", 
+                    "stored_hash": current_block.hash,
+                    "calculated_hash": calculated_hash,
+                    "block_data": current_block.data,
+                    "timestamp": current_block.timestamp,
+                    "severity": "CRITICAL"
+                }
+                infected_blocks.append(infection_info)
+                print(f"🚨 [CRITICAL] INFECTED BLOCK #{current_block.index} - HASH MISMATCH")
+                print(f"   └─ Stored: {current_block.hash[:16]}...")
+                print(f"   └─ Calculated: {calculated_hash[:16]}...")
+            
+            # Check 2: Chain Continuity  
+            if current_block.previous_hash != previous_block.hash:
+                infection_info = {
+                    "block_id": current_block.index,
+                    "infection_type": "CHAIN_BREAK",
+                    "expected_previous": previous_block.hash, 
+                    "actual_previous": current_block.previous_hash,
+                    "block_data": current_block.data,
+                    "timestamp": current_block.timestamp,
+                    "severity": "CRITICAL"
+                }
+                infected_blocks.append(infection_info)
+                print(f"🚨 [CRITICAL] INFECTED BLOCK #{current_block.index} - CHAIN BREAK")
+                print(f"   └─ Expected: {previous_block.hash[:16]}...")
+                print(f"   └─ Actual: {current_block.previous_hash[:16]}...")
+        
+        # If no infections found
+        if not infected_blocks:
+            print("✅ [ALL CLEAR] Blockchain is clean and secure!")
+            print("=" * 70)
+            return True
+        
+        # Echo infected block IDs
+        infected_ids = [block["block_id"] for block in infected_blocks]
+        print(f"\n🚫 [INFECTION DETECTED] Infected Block IDs: {infected_ids}")
+        print(f"📊 [SUMMARY] {len(infected_blocks)} infected blocks found")
+        
+        # Display detailed infection report
+        print("\n📋 [INFECTION DETAILS]")
+        print("-" * 50)
+        for infection in infected_blocks:
+            print(f"Block #{infection['block_id']}:")
+            print(f"  Type: {infection['infection_type']}")
+            print(f"  Severity: {infection['severity']}")
+            if 'block_data' in infection:
+                action = infection['block_data'].get('action', 'unknown')
+                username = infection['block_data'].get('username', 'N/A')
+                print(f"  Action: {action} (User: {username})")
+            print(f"  Time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(infection['timestamp']))}")
+            print("-" * 30)
+        
+        # Create clean fallback chain (excluding infected blocks)
+        self._create_enhanced_fallback_response(infected_blocks)
+        
+        return False
+
+    def _create_enhanced_fallback_response(self, infected_blocks):
+        """
+        Enhanced fallback response that creates a clean chain excluding infected blocks
+        """
+        print("\n🛡️  [QUARANTINE PROTOCOL] Creating clean fallback chain...")
+        print("=" * 70)
+        
+        infected_ids = [block_info["block_id"] for block_info in infected_blocks]
+        
+        # Step 1: Separate clean blocks from infected blocks
+        clean_blocks = []
+        quarantined_blocks = []
+        
+        # Always preserve genesis block
+        clean_blocks.append(self.chain[0])
+        print(f"✅ Block #0 (Genesis) - PRESERVED")
+        
+        # Process remaining blocks
+        for block in self.chain[1:]:
+            if block.index in infected_ids:
+                quarantined_blocks.append(block)
+                print(f"🚫 Block #{block.index} - QUARANTINED ({block.data.get('action', 'unknown')})")
+            else:
+                clean_blocks.append(block)
+                print(f"✅ Block #{block.index} - CLEAN ({block.data.get('action', 'unknown')})")
+        
+        # Step 2: Rebuild hash chain for clean blocks
+        print(f"\n🔧 [REBUILD] Reconstructing clean hash chain...")
+        for i in range(1, len(clean_blocks)):
+            # Update index to reflect new position in clean chain
+            clean_blocks[i].index = i
+            # Link to previous clean block
+            clean_blocks[i].previous_hash = clean_blocks[i-1].hash
+            # Recalculate hash with new linking
+            clean_blocks[i].hash = clean_blocks[i].calculate_hash()
+            print(f"🔗 Block #{i} - Hash chain rebuilt")
+        
+        # Step 3: Extract users from clean chain only
+        clean_users = {}
+        for block in clean_blocks:
+            if block.data.get("action") == "register":
+                username = block.data.get("username")
+                role = block.data.get("role", "user")
+                public_key = block.data.get("public_key")
+                private_key = block.data.get("private_key")
+                
+                if username:
+                    clean_users[username] = {
+                        "role": role,
+                        "public_key": public_key,
+                        "private_key": private_key,
+                        "migrated_at": time.time(),
+                        "source_block": block.index
+                    }
+        
+        # Step 4: Create comprehensive fallback data
+        fallback_data = {
+            "created_at": time.time(),
+            "breach_reason": "Enhanced infection detection and quarantine protocol",
+            "scan_timestamp": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+            "infected_blocks_count": len(infected_blocks),
+            "infected_block_ids": infected_ids,
+            "infected_block_details": infected_blocks,
+            "original_chain_length": len(self.chain),
+            "clean_chain_length": len(clean_blocks),
+            "quarantined_blocks_count": len(quarantined_blocks),
+            "users": clean_users
+        }
+        
+        # Step 5: Save files
+        timestamp = int(time.time())
+        
+        # Save enhanced fallback database
+        fallback_path = self.chain_manager.get_path('fallback', timestamp=timestamp)
+        with open(fallback_path, "w") as f:
+            json.dump(fallback_data, f, indent=4)
+        
+        # Save quarantined blocks for forensic analysis
+        quarantine_path = self.chain_manager.get_path('quarantine', timestamp=timestamp)
+        with open(quarantine_path, "w") as f:
+            json.dump({
+                "quarantine_timestamp": time.time(),
+                "quarantine_reason": "Blockchain infection detected",
+                "infected_blocks": infected_blocks,
+                "quarantined_block_data": [block.to_dict() for block in quarantined_blocks]
+            }, f, indent=4)
+            
+        # Save forensic report
+        forensic_path = self.chain_manager.get_path('forensic', timestamp=timestamp)
+        with open(forensic_path, "w") as f:
+            json.dump({
+                "forensic_timestamp": time.time(),
+                "analysis_type": "Blockchain Infection Analysis",
+                "infected_blocks": infected_blocks,
+                "quarantine_actions": [f"Block #{bid} quarantined" for bid in infected_ids],
+                "file_locations": {
+                    "fallback_database": str(fallback_path),
+                    "quarantined_blocks": str(quarantine_path)
+                }
+            }, f, indent=4)
+                   
+        # Save clean chain as new active blockchain
+        clean_chain_filename = f"clean_blockchain_db_{timestamp}.json"
+        with open(clean_chain_filename, "w") as f:
+            json.dump([block.to_dict() for block in clean_blocks], f, indent=4)
+        
+        # Step 6: Replace current chain with clean chain
+        self.chain = clean_blocks
+        self.save_chain()  # Update the main blockchain_db.json with clean chain
+        
+        # Step 7: Summary report
+        print("\n🎉 [QUARANTINE COMPLETE] System successfully sanitized!")
+        print("=" * 70)
+        print(f"📁 Centralized storage location: {self.chain_manager.base_dir}")
+        print(f"📄 Fallback database: {fallback_path.name}")
+        print(f"🚫 Quarantine data: {quarantine_path.name}")
+        print(f"🔍 Forensic report: {forensic_path.name}")
+        print(f"📊 Statistics:")
+        print(f"   ├─ Original chain: {fallback_data['original_chain_length']} blocks")
+        print(f"   ├─ Clean chain: {fallback_data['clean_chain_length']} blocks")
+        print(f"   ├─ Quarantined: {fallback_data['quarantined_blocks_count']} blocks")
+        print(f"   └─ Users preserved: {len(clean_users)}")
+
+        print(f"\n✅ Active blockchain updated with clean chain")
+        print(f"🚫 Infected blocks stored in quarantine directory")
+        print(f"🛡️  System integrity restored with centralized management")
+        
+
+    # Also replace the old _trigger_fallback_response method:
+    def _trigger_fallback_response(self, breach_reason):
+        """Legacy fallback - redirects to enhanced version"""
+        print(f"🚨 [LEGACY ALERT] {breach_reason}")
+        print("🔄 [UPGRADE] Redirecting to enhanced quarantine protocol...")
+        
+        # Run enhanced scan to identify specific infected blocks
+        infected_blocks = []
         for i in range(1, len(self.chain)):
             current_block = self.chain[i]
             previous_block = self.chain[i-1]
             
             if current_block.hash != current_block.calculate_hash():
-                # Blockchain integrity compromised, trigger fallback response
-                self._trigger_fallback_response("Hash mismatch detected")
-                return False
+                infected_blocks.append({
+                    "block_id": current_block.index,
+                    "infection_type": "HASH_MISMATCH",
+                    "stored_hash": current_block.hash,
+                    "calculated_hash": current_block.calculate_hash(),
+                    "block_data": current_block.data,
+                    "timestamp": current_block.timestamp,
+                    "severity": "CRITICAL"
+                })
             
             if current_block.previous_hash != previous_block.hash:
-                # Blockchain integrity compromised, trigger fallback response
-                self._trigger_fallback_response("Chain continuity broken")
-                return False
-                
-        return True
-    
-    def _trigger_fallback_response(self, breach_reason):
-        """Creates a fallback database when blockchain integrity is compromised"""
-        print(f"WARNING: Blockchain integrity compromised - {breach_reason}")
-        print("Initiating security response...")
-
-        fallback_db = "fallback_db.json"
-        fallback_data = {
-            "created_at": time.time(),
-            "breach_reason": breach_reason,
-            "users": {}
-        }
-
-        for block in self.chain:
-            if block.data.get("action") == "register":
-                username = block.data.get("username")
-                role = block.data.get("role")
-                private_key = block.data.get("private_key")
-                public_key = block.data.get("public_key")
-
-                if username:
-                    fallback_data["users"][username] = {
-                        "role": role,
-                        "private_key": private_key,
-                        "public_key": public_key,
-                        "migrated_at": time.time()
-                    }
-
-        with open(fallback_db, "w") as f:
-            json.dump(fallback_data, f, indent=4)
-
-        print("\nSecurity measures completed:")
-        print(f"- Created fallback database: {fallback_db}")
-        print(f"- Migrated {len(fallback_data['users'])} users to fallback database")
-        print("- System will now use the fallback database")
+                infected_blocks.append({
+                    "block_id": current_block.index,
+                    "infection_type": "CHAIN_BREAK", 
+                    "expected_previous": previous_block.hash,
+                    "actual_previous": current_block.previous_hash,
+                    "block_data": current_block.data,
+                    "timestamp": current_block.timestamp,
+                    "severity": "CRITICAL"
+                })
+        
+        if infected_blocks:
+            self._create_enhanced_fallback_response(infected_blocks)
+        else:
+            print("🤔 [ANOMALY] Legacy alert triggered but no infections found")
 
         self.rehash_chain()
         print("- Blockchain rehashed to restore integrity")
@@ -141,9 +393,18 @@ class Blockchain:
         return [block.to_dict() for block in self.chain]
     
     def save_chain(self):
-        """Save blockchain to file"""
+        """Save blockchain to centralized active directory with backup"""
+        global BLOCKCHAIN_DB
+        
+        # Create backup before saving new version
+        if os.path.exists(BLOCKCHAIN_DB):
+            self.chain_manager.create_backup(BLOCKCHAIN_DB)
+        
+        # Save to centralized active location
         with open(BLOCKCHAIN_DB, "w") as f:
             json.dump(self.to_dict(), f, indent=4)
+        
+        print(f"💾 [SAVE] Blockchain saved to: {BLOCKCHAIN_DB}")
     
     def load_chain(self):
         """Load blockchain from file"""

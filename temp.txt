@@ -1,96 +1,16 @@
-import os
-import json
-import sys
-import time
-import getpass
-from polymorphicblock import AuthSystem, authenticate, initialize_system, main_menu
-# block re-organizer
-from polymorphic_adjuster import BlockAdjuster
-# block state refresher
-from core_refresher import CoreRefresher
+        print("\n🎉 [QUARANTINE COMPLETE] System successfully sanitized!")
+        print("=" * 70)
+        print(f"📁 Centralized storage location: {self.chain_manager.base_dir}")
+        print(f"📄 Fallback database: {fallback_path.name}")
+        print(f"🚫 Quarantine data: {quarantine_path.name}")
+        print(f"🔍 Forensic report: {forensic_path.name}")
+        print(f"📊 Statistics:")
+        print(f"   ├─ Original chain: {fallback_data['original_chain_length']} blocks")
+        print(f"   ├─ Clean chain: {fallback_data['clean_chain_length']} blocks")
+        print(f"   ├─ Quarantined: {fallback_data['quarantined_blocks_count']} blocks")
+        print(f"   └─ Users preserved: {len(clean_users)}")
 
-from storage import BlockchainStorage
-import blockchain_databases
-
-def setup_directories():
-    """Set up all necessary directories for the blockchain system"""
-    # Create main directories
-    directories = ["userData", "databases", "security_logs"]
-    
-    for directory in directories:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            print(f"Created directory: {directory}")
-            
-    return True
-
-def check_database_files():
-    """Check if necessary database files exist"""
-    database_files = ["blockchain_db.json", "blockStorage.json"]
-    missing_files = []
-    
-    for file in database_files:
-        if not os.path.exists(file):
-            missing_files.append(file)
-    
-    return missing_files
-
-def initialize_blockchain_system():
-    """Initialize the entire blockchain system"""
-    print("\n===== Blockchain System Setup =====")
-    
-    # Setup all directories
-    setup_directories()
-    
-    # Check for missing database files
-    missing_files = check_database_files()
-    if missing_files:
-        print(f"The following database files are missing: {', '.join(missing_files)}")
-        print("These will be created during system initialization.")
-    
-    # Initialize the blockchain system
-    initialize_system()
-    
-    # Initialize database folders
-    blockchain_databases.initialize_database_folders()
-    
-    print("\nBlockchain system initialized successfully.")
-    print("Please login to continue.")
-
-def run_system():
-    """Run the blockchain system"""
-    # Initialize the system if needed
-    if not os.path.exists("blockchain_db.json"):
-        initialize_blockchain_system()
-    
-    # get the initialized blockchain
-    auth_system = AuthSystem()
-    blockchain = auth_system.blockchain
-    
-    # block re-organizer- this re-orders blocks to increase intergrity,
-    # at a 20 block radius while maintaining the genesis block
-    adjuster = BlockAdjuster(blockchain)
-    adjuster.start_timer()
-    
-    # Authenticate user
-    username, user_role = authenticate()
-    
-    # If authentication successful, show main menu
-    if username:
-        # in initialiaze the storage and core refresher
-        storage = BlockchainStorage(filename="blockchain_db.json")
-        auth_system =  AuthSystem()
-        core_refresher = CoreRefresher(auth_system.blockchain, auth_system.db_manager, storage)
+        print(f"\n✅ Active blockchain updated with clean chain")
+        print(f"🚫 Infected blocks stored in quarantine directory")
+        print(f"🛡️  System integrity restored with centralized management")
         
-        # calling the initial refresh
-        core_refresher.refresh()
-        
-        main_menu(username, user_role, core_refresher)
-
-if __name__ == "__main__":
-    auth_system = AuthSystem()
-    blockchain = auth_system.blockchain
-    blockchain = blockchain
-    refresher = refresher
-    
-    run_system()
