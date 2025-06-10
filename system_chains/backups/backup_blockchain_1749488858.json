@@ -608,27 +608,5 @@
         },
         "previous_hash": "762519f411b39bf9c957c2ef5e6bd4f56c68f81741df993aaee1941128ec97e9",
         "hash": "2ceaffa4ab91dc28edef725b61589242ac646a8b065bca2695658c83985ec5fc"
-    },
-    {
-        "index": 53,
-        "timestamp": 1749488858.1846194,
-        "data": {
-            "action": "authenticate",
-            "username": "admin",
-            "timestamp": 1749488858.1846147
-        },
-        "previous_hash": "2ceaffa4ab91dc28edef725b61589242ac646a8b065bca2695658c83985ec5fc",
-        "hash": "b6a1f0752bdfad55bcb5fe233f8aaed2ba27d396238150fb120dba30026b4689"
-    },
-    {
-        "index": 54,
-        "timestamp": 1749489353.677127,
-        "data": {
-            "action": "authenticate",
-            "username": "admin",
-            "timestamp": 1749489353.677121
-        },
-        "previous_hash": "b6a1f0752bdfad55bcb5fe233f8aaed2ba27d396238150fb120dba30026b4689",
-        "hash": "263215ccc598ad0bb700178ba351d7808c6a832d4c8b7f465069ca650ab1f7f4"
     }
 ]

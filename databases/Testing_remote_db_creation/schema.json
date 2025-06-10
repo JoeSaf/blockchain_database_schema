@@ -1,0 +1,9 @@
+{
+    "tables": {
+        "From_phone": {
+            "fields": {
+                "Remote_gui_test": "string"
+            }
+        }
+    }
+}

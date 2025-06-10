@@ -1,0 +1,143 @@
+{
+    "quarantine_timestamp": 1749488291.8318963,
+    "quarantine_reason": "Blockchain infection detected",
+    "infected_blocks": [
+        {
+            "block_id": 46,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "15fe927acc342577db6297199c08b00b275f70ad260ec383327c3ac11adce2cf",
+            "calculated_hash": "f8cbcf71e38a1896e8f318d5455f92de98a84b70e15c228029f9c686ca729a68",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749484717.8411129
+            },
+            "timestamp": 1749484717.8411155,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 46,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "58a9f04da00af6f334df3e0c2b3f370df773221661fe566231b4be035a56ac2d",
+            "actual_previous": "58a9f04da00af6f334df3e0c2b3f31211df773221661fe566231b4be035a56ac2d",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749484717.8411129
+            },
+            "timestamp": 1749484717.8411155,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 47,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "05479ca5587574c428770b045e76311246eed22506d31356d02334268043906ad",
+            "calculated_hash": "422150a73c12ff0b0147ca085869fac17f011b7f7e57fd6d746701b19de4fb33",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749484752.2540154
+            },
+            "timestamp": 1749484752.2540176,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 47,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "15fe927acc342577db6297199c08b00b275f70ad260ec383327c3ac11adce2cf",
+            "actual_previous": "15fe927acc342577db6297199c08b00b2722370ad260ec381937c3ac11adce2cf",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749484752.2540154
+            },
+            "timestamp": 1749484752.2540176,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 48,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "05479ca5587574c428770b045e76311246eed22506d31356d02334268043906ad",
+            "actual_previous": "05479ca5587574c428770b045e76311246eed22506d31356d0b54268043906ad",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749485019.8208299
+            },
+            "timestamp": 1749485019.8208325,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 53,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "2dc1d031a25665d091e228142085be11a4dc2c73799017f31c5c46c316822c9f",
+            "calculated_hash": "3feba1e0f46f82a02bb7a0f5ab840deebf8152628d1fc8f529b69080c3bc2a52",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749488242.9812777
+            },
+            "timestamp": 1749488242.9812813,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 53,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "b67c3283283737174538e89586402a24abf7a91f2f7dd1ff4eb7a6d0607f64f1",
+            "actual_previous": "b67c328328373r2e174538e89586402a24abf7a91f2f7dd1ff4eb7a6d0607f64f1",
+            "block_data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749488242.9812777
+            },
+            "timestamp": 1749488242.9812813,
+            "severity": "CRITICAL"
+        }
+    ],
+    "quarantined_block_data": [
+        {
+            "index": 46,
+            "timestamp": 1749484717.8411155,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749484717.8411129
+            },
+            "previous_hash": "58a9f04da00af6f334df3e0c2b3f31211df773221661fe566231b4be035a56ac2d",
+            "hash": "15fe927acc342577db6297199c08b00b275f70ad260ec383327c3ac11adce2cf"
+        },
+        {
+            "index": 47,
+            "timestamp": 1749484752.2540176,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749484752.2540154
+            },
+            "previous_hash": "15fe927acc342577db6297199c08b00b2722370ad260ec381937c3ac11adce2cf",
+            "hash": "05479ca5587574c428770b045e76311246eed22506d31356d02334268043906ad"
+        },
+        {
+            "index": 48,
+            "timestamp": 1749485019.8208325,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749485019.8208299
+            },
+            "previous_hash": "05479ca5587574c428770b045e76311246eed22506d31356d0b54268043906ad",
+            "hash": "7733f6cd67a0e24da61bb44e2fb761c8d9ae30366074cabca5224fe368c039cc"
+        },
+        {
+            "index": 53,
+            "timestamp": 1749488242.9812813,
+            "data": {
+                "action": "authenticate",
+                "username": "admin",
+                "timestamp": 1749488242.9812777
+            },
+            "previous_hash": "b67c328328373r2e174538e89586402a24abf7a91f2f7dd1ff4eb7a6d0607f64f1",
+            "hash": "2dc1d031a25665d091e228142085be11a4dc2c73799017f31c5c46c316822c9f"
+        }
+    ]
+}

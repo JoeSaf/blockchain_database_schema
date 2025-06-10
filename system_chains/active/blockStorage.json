@@ -160,5 +160,18 @@
         "storpath": "databases/checking to see presence in gui",
         "previous_hash": "289e3b77c263d4a6c5f91292a307cd6c2860e20ace985c4bcd7650688a71f8fb",
         "hash": "b763ebfe4b2d1808636d8a27146a8779cb8d0e41b93d1d7442e03bfc8cd381b1"
+    },
+    {
+        "index": 12,
+        "timestamp": 1749489841.9735916,
+        "data": {
+            "action": "create_database",
+            "name": "Testing_remote_db_creation",
+            "owner": "admin",
+            "timestamp": 1749489841.9735851
+        },
+        "storpath": "databases/Testing_remote_db_creation",
+        "previous_hash": "b763ebfe4b2d1808636d8a27146a8779cb8d0e41b93d1d7442e03bfc8cd381b1",
+        "hash": "8334622eda8baaa70138e8dc2f3cb9713dc602a22136886461dc75696ca2de08"
     }
 ]
