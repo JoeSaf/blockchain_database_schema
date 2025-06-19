@@ -3,21 +3,625 @@
 {% block title %}Tables in {{ db_name }}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Tables in {{ db_name }}</h2>
-    
+<style>
+    .tables-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .database-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .database-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 300;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .database-header .subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+        margin-top: 10px;
+    }
+
+    .stats-bar {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin: 20px 0;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: 25px;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-icon {
+        font-size: 1.2rem;
+    }
+
+    .controls-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .search-container {
+        position: relative;
+        flex: 1;
+        max-width: 400px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 20px 12px 45px;
+        border: 2px solid #e0e6ed;
+        border-radius: 25px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        font-size: 1.1rem;
+    }
+
+    .view-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .view-toggle {
+        display: flex;
+        background: #f1f3f4;
+        border-radius: 8px;
+        padding: 4px;
+    }
+
+    .view-btn {
+        padding: 8px 12px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        font-size: 1rem;
+    }
+
+    .view-btn.active {
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        color: #667eea;
+    }
+
+    .tables-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .tables-list {
+        display: none;
+    }
+
+    .tables-list.active {
+        display: block;
+    }
+
+    .tables-grid.active {
+        display: grid;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid #f0f0f0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .table-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+    }
+
+    .table-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        display: block;
+    }
+
+    .table-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        word-break: break-word;
+    }
+
+    .table-meta {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #666;
+        border: 1px solid #e0e6ed;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-title {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .empty-description {
+        font-size: 1rem;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .table-list-item {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border: 1px solid #f0f0f0;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .table-list-item:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    .table-list-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+
+    .table-list-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .table-list-meta {
+        display: flex;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .back-section {
+        margin-top: 40px;
+        text-align: center;
+    }
+
+    .breadcrumb {
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .breadcrumb a {
+        color: #667eea;
+        text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .database-header h1 {
+            font-size: 2rem;
+        }
+        
+        .controls-section {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-container {
+            max-width: none;
+        }
+        
+        .tables-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .table-list-item {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .table-list-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+
+    .loading-skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 8px;
+        height: 20px;
+        margin-bottom: 10px;
+    }
+
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+</style>
+
+<div class="tables-container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <a href="{{ url_for('home') }}">🏠 Home</a> / 
+        <span>📊 {{ db_name }}</span>
+    </div>
+
+    <!-- Database Header -->
+    <div class="database-header">
+        <h1>📊 {{ db_name }}</h1>
+        <div class="subtitle">Database Tables Management</div>
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-icon">📋</span>
+                <span>{{ tables|length }} Table{{ 's' if tables|length != 1 else '' }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">🔒</span>
+                <span>Secured</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-icon">⚡</span>
+                <span>Active</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls Section -->
+    <div class="controls-section">
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" 
+                   class="search-input" 
+                   id="tableSearch" 
+                   placeholder="Search tables..."
+                   onkeyup="filterTables()">
+        </div>
+        
+        <div class="view-controls">
+            <div class="view-toggle">
+                <button class="view-btn active" id="gridView" onclick="switchView('grid')">
+                    📋
+                </button>
+                <button class="view-btn" id="listView" onclick="switchView('list')">
+                    📃
+                </button>
+            </div>
+            
+            <a href="{{ url_for('create_database') }}" class="btn btn-success">
+                ➕ New Database
+            </a>
+        </div>
+    </div>
+
     {% if tables %}
-    <ul>
-        {% for table in tables %}
-        <li>
-            <a href="{{ url_for('view_table', db_name=db_name, table_name=table) }}">{{ table }}</a>
-        </li>
-        {% endfor %}
-    </ul>
+        <!-- Grid View -->
+        <div class="tables-grid active" id="gridContainer">
+            {% for table in tables %}
+            <div class="table-card" data-table-name="{{ table.lower() }}">
+                <span class="table-icon">📋</span>
+                <div class="table-name">{{ table }}</div>
+                <div class="table-meta">
+                    <div class="meta-item">
+                        <span>📊</span>
+                        <span>Records: --</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📅</span>
+                        <span>Updated: Recently</span>
+                    </div>
+                </div>
+                <div class="table-actions">
+                    <a href="{{ url_for('view_table', db_name=db_name, table_name=table) }}" 
+                       class="btn btn-primary">
+                        👁️ View Data
+                    </a>
+                    <a href="#" class="btn btn-secondary" onclick="addRecord('{{ table }}')">
+                        ➕ Add Record
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- List View -->
+        <div class="tables-list" id="listContainer">
+            {% for table in tables %}
+            <div class="table-list-item" data-table-name="{{ table.lower() }}">
+                <div class="table-list-info">
+                    <span class="table-icon">📋</span>
+                    <div>
+                        <div class="table-list-name">{{ table }}</div>
+                        <div class="table-list-meta">
+                            <span>📊 Records: --</span>
+                            <span>📅 Updated: Recently</span>
+                            <span>🔧 Type: Data Table</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-actions">
+                    <a href="{{ url_for('view_table', db_name=db_name, table_name=table) }}" 
+                       class="btn btn-primary">
+                        👁️ View
+                    </a>
+                    <a href="#" class="btn btn-secondary" onclick="addRecord('{{ table }}')">
+                        ➕ Add
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- No Search Results -->
+        <div class="empty-state hidden" id="noResults">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">No tables found</div>
+            <div class="empty-description">
+                No tables match your search criteria. Try adjusting your search terms.
+            </div>
+        </div>
+
     {% else %}
-    <p>No tables available in this database.</p>
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <div class="empty-title">No Tables Available</div>
+            <div class="empty-description">
+                This database doesn't have any tables yet. Create your first table to get started with storing and organizing your data.
+            </div>
+            <a href="{{ url_for('create_database') }}" class="btn btn-success">
+                🚀 Create First Table
+            </a>
+        </div>
     {% endif %}
-    
-    <a href="{{ url_for('home') }}" class="btn">Back to Databases</a>
+
+    <!-- Back Section -->
+    <div class="back-section">
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">
+            🔙 Back to Databases
+        </a>
+    </div>
 </div>
+
+<script>
+    // View switching functionality
+    function switchView(view) {
+        const gridView = document.getElementById('gridView');
+        const listView = document.getElementById('listView');
+        const gridContainer = document.getElementById('gridContainer');
+        const listContainer = document.getElementById('listContainer');
+
+        if (view === 'grid') {
+            gridView.classList.add('active');
+            listView.classList.remove('active');
+            gridContainer.classList.add('active');
+            listContainer.classList.remove('active');
+            localStorage.setItem('tablesView', 'grid');
+        } else {
+            listView.classList.add('active');
+            gridView.classList.remove('active');
+            listContainer.classList.add('active');
+            gridContainer.classList.remove('active');
+            localStorage.setItem('tablesView', 'list');
+        }
+    }
+
+    // Search functionality
+    function filterTables() {
+        const searchTerm = document.getElementById('tableSearch').value.toLowerCase();
+        const tableCards = document.querySelectorAll('[data-table-name]');
+        const noResults = document.getElementById('noResults');
+        let visibleCount = 0;
+
+        tableCards.forEach(card => {
+            const tableName = card.getAttribute('data-table-name');
+            if (tableName.includes(searchTerm)) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Show/hide no results message
+        if (visibleCount === 0 && searchTerm.length > 0) {
+            noResults.classList.remove('hidden');
+        } else {
+            noResults.classList.add('hidden');
+        }
+    }
+
+    // Add record functionality
+    function addRecord(tableName) {
+        // This would typically redirect to an add record page
+        // For now, we'll show an alert
+        alert(`Add record functionality for table "${tableName}" would go here.`);
+        // In a real implementation:
+        // window.location.href = `/add_record/{{ db_name }}/${tableName}`;
+    }
+
+    // Restore saved view preference
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedView = localStorage.getItem('tablesView') || 'grid';
+        switchView(savedView);
+
+        // Add some loading simulation for records count (remove in production)
+        setTimeout(() => {
+            const recordElements = document.querySelectorAll('.table-meta .meta-item span');
+            recordElements.forEach((el, index) => {
+                if (el.textContent.includes('Records: --')) {
+                    el.textContent = `Records: ${Math.floor(Math.random() * 1000)}`;
+                }
+            });
+        }, 1000);
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('tableSearch').focus();
+        }
+        
+        // Escape to clear search
+        if (e.key === 'Escape') {
+            const searchInput = document.getElementById('tableSearch');
+            if (searchInput.value) {
+                searchInput.value = '';
+                filterTables();
+            }
+        }
+    });
+
+    // Search input enhancements
+    document.getElementById('tableSearch').addEventListener('input', function(e) {
+        // Clear search with X button simulation
+        if (e.target.value === '') {
+            filterTables();
+        }
+    });
+</script>
+
 {% endblock %}

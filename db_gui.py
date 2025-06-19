@@ -488,77 +488,325 @@ def get_storage_usage():
     except Exception:
         return {"error": "Unable to calculate storage usage"}
 
-# ==================== EXISTING TABLE/DATABASE ROUTES ====================
-# (Keep all your existing table and database routes)
+# ==================== DATABASE AND TABLE MANAGEMENT ROUTES ====================
 
 @app.route("/tables/<db_name>")
 def list_tables(db_name):
-    """List tables in a database"""
+    """Enhanced list tables in a database"""
     if 'username' not in session:
+        flash("Please log in to access this page.")
         return redirect(url_for('login'))
     
-    # Get the database path for the given name
-    all_dbs = db_manager.list_databases(session['username'], session.get('role'))
-    db = next((d for d in all_dbs if d["name"] == db_name), None)
-    
-    if not db:
-        flash(f"Database '{db_name}' not found!")
-        return redirect(url_for('home'))
-    
-    # Read the schema file to get tables
-    schema_file = os.path.join(db["path"], "schema.json")
-    if os.path.exists(schema_file):
-        with open(schema_file, "r") as f:
-            schema = json.load(f)
-            tables = schema.get("tables", {}).keys()
-    else:
+    try:
+        # Get the database path for the given name
+        all_dbs = db_manager.list_databases(session['username'], session.get('role'))
+        db = next((d for d in all_dbs if d["name"] == db_name), None)
+        
+        if not db:
+            flash(f"Database '{db_name}' not found or you don't have access to it!")
+            return redirect(url_for('home'))
+        
+        # Read the schema file to get tables
+        schema_file = os.path.join(db["path"], "schema.json")
         tables = []
-    
-    return render_template("tables.html", db_name=db_name, tables=list(tables))
+        
+        if os.path.exists(schema_file):
+            try:
+                with open(schema_file, "r", encoding='utf-8') as f:
+                    schema = json.load(f)
+                    tables = list(schema.get("tables", {}).keys())
+            except json.JSONDecodeError as e:
+                print(f"Error reading schema file: {str(e)}")
+                flash("Error reading database schema.")
+        else:
+            flash("Database schema file not found.")
+        
+        return render_template("tables.html", db_name=db_name, tables=tables)
+        
+    except Exception as e:
+        print(f"Error in list_tables: {str(e)}")
+        flash(f"Error loading tables: {str(e)}")
+        return redirect(url_for('home'))
+
 
 @app.route("/table/<db_name>/<table_name>")
 def view_table(db_name, table_name):
-    """View records in a table"""
+    """Enhanced view records in a table with better error handling"""
     if 'username' not in session:
+        flash("Please log in to access this page.")
         return redirect(url_for('login'))
     
-    # Get database items from the blockchain
-    items = db_manager.get_database_items(db_name, session['username'], session.get('role'))
-    
-    # Filter items that belong to the requested table
-    table_items = []
-    for item in items:
-        try:
-            with open(item["path"], "r") as f:
-                data = json.load(f)
-                if data.get("table") == table_name:
-                    # Add item data and its ID to the table_items list
-                    table_items.append({
-                        "id": os.path.basename(item["path"]).split("_")[1].split(".")[0],
-                        "data": data.get("data", {})
-                    })
-        except Exception as e:
-            print(f"Error reading item {item['path']}: {str(e)}")
-    
-    # If we have any items, determine the columns from the first item
-    columns = []
-    rows = []
-    if table_items:
-        # Get column names from the first item's data
-        if table_items[0]["data"] and isinstance(table_items[0]["data"], dict):
-            columns = list(table_items[0]["data"].keys())
+    try:
+        # Verify user has access to this database
+        databases = db_manager.list_databases(session['username'], session.get('role'))
+        db_exists = any(db['name'] == db_name for db in databases)
         
-        # Format data as rows
-        for item in table_items:
-            if isinstance(item["data"], dict):
-                row = [item["id"]] + [item["data"].get(col, "") for col in columns]
+        if not db_exists:
+            flash(f"Database '{db_name}' not found or you don't have access to it.")
+            return redirect(url_for('home'))
+        
+        # Get database items from the blockchain
+        items = db_manager.get_database_items(db_name, session['username'], session.get('role'))
+        
+        # Filter items that belong to the requested table
+        table_items = []
+        for item in items:
+            try:
+                if not item.get("path") or not os.path.exists(item["path"]):
+                    continue
+                    
+                with open(item["path"], "r", encoding='utf-8') as f:
+                    data = json.load(f)
+                    
+                if data.get("table") == table_name:
+                    # Extract ID from filename
+                    filename = os.path.basename(item["path"])
+                    try:
+                        if "_" in filename:
+                            item_id = filename.split("_")[1].split(".")[0]
+                        else:
+                            item_id = filename.split(".")[0]
+                        if not item_id:
+                            item_id = str(len(table_items) + 1)
+                    except (IndexError, ValueError):
+                        item_id = str(len(table_items) + 1)
+                    
+                    # Extract and validate data
+                    record_data = data.get("data", {})
+                    if not isinstance(record_data, dict):
+                        if isinstance(record_data, (list, tuple)):
+                            record_data = {f"field_{i}": val for i, val in enumerate(record_data)}
+                        else:
+                            record_data = {"value": str(record_data)}
+                    
+                    table_items.append({
+                        "id": item_id,
+                        "data": record_data,
+                        "path": item["path"]
+                    })
+                    
+            except Exception as e:
+                print(f"Error reading item {item.get('path', 'unknown')}: {str(e)}")
+                continue
+        
+        # Determine columns and format rows
+        columns = []
+        rows = []
+        
+        if table_items:
+            # Get all possible column names
+            all_columns = set()
+            for item in table_items:
+                if isinstance(item["data"], dict):
+                    all_columns.update(item["data"].keys())
+            columns = sorted(list(all_columns))
+            
+            if not columns:
+                columns = ["data"]
+            
+            # Format data as rows
+            for item in table_items:
+                row = [item["id"]]  # Start with ID
+                
+                for col in columns:
+                    value = item["data"].get(col, "")
+                    if isinstance(value, (dict, list)):
+                        value = json.dumps(value, ensure_ascii=False)
+                    elif value is None:
+                        value = ""
+                    elif isinstance(value, bool):
+                        value = "True" if value else "False"
+                    else:
+                        value = str(value)
+                    row.append(value)
+                
                 rows.append(row)
+            
+            # Add ID column at the beginning
+            columns = ["ID"] + columns
+        
+        print(f"Debug - Table: {table_name}, Items: {len(table_items)}, Columns: {columns}")
+        
+        return render_template("table_view.html", 
+                             db_name=db_name, 
+                             table_name=table_name,
+                             columns=columns, 
+                             rows=rows)
+        
+    except Exception as e:
+        print(f"Error in view_table: {str(e)}")
+        flash(f"Error loading table '{table_name}': {str(e)}")
+        return redirect(url_for('list_tables', db_name=db_name))
+
+
+@app.route("/add_record/<db_name>/<table_name>", methods=["GET", "POST"])
+def add_record(db_name, table_name):
+    """Add a new record to the specified table"""
+    if 'username' not in session:
+        flash("Please log in to access this page.")
+        return redirect(url_for('login'))
     
-    # Add ID column at the beginning
-    columns = ["ID"] + columns
+    try:
+        # Verify access to database
+        databases = db_manager.list_databases(session['username'], session.get('role'))
+        db_exists = any(db['name'] == db_name for db in databases)
+        
+        if not db_exists:
+            flash(f"Database '{db_name}' not found or you don't have access to it.")
+            return redirect(url_for('home'))
+        
+        if request.method == "GET":
+            # Get table schema
+            table_schema = get_table_schema(db_name, table_name)
+            fields = table_schema.get("fields", {}) if table_schema else {}
+            
+            return render_template("add_record.html", 
+                                 db_name=db_name, 
+                                 table_name=table_name,
+                                 fields=fields)
+        
+        elif request.method == "POST":
+            # Process form data
+            record_data = {}
+            
+            # Handle dynamic fields
+            field_names = request.form.getlist('field_names[]')
+            field_values = request.form.getlist('field_values[]')
+            
+            # Process regular form fields
+            for key, value in request.form.items():
+                if key not in ['field_names[]', 'field_values[]'] and value.strip():
+                    record_data[key] = value.strip()
+            
+            # Process dynamic fields
+            for i, field_name in enumerate(field_names):
+                if field_name.strip() and i < len(field_values) and field_values[i].strip():
+                    record_data[field_name.strip()] = field_values[i].strip()
+            
+            if not record_data:
+                flash("Please provide at least one field with data.")
+                return redirect(url_for('add_record', db_name=db_name, table_name=table_name))
+            
+            # Create record
+            try:
+                timestamp = int(time.time())
+                record_id = f"{table_name}_{timestamp}"
+                
+                full_data = {
+                    "table": table_name,
+                    "data": record_data,
+                    "timestamp": datetime.now().isoformat(),
+                    "created_by": session['username']
+                }
+                
+                success = db_manager.add_item(db_name, record_id, full_data, session['username'])
+                
+                if success:
+                    flash("Record added successfully!")
+                    return redirect(url_for('view_table', db_name=db_name, table_name=table_name))
+                else:
+                    flash("Failed to add record. Please try again.")
+                    
+            except Exception as e:
+                print(f"Error adding record: {str(e)}")
+                flash(f"Error adding record: {str(e)}")
+            
+            return redirect(url_for('add_record', db_name=db_name, table_name=table_name))
+            
+    except Exception as e:
+        print(f"Error in add_record: {str(e)}")
+        flash(f"Error: {str(e)}")
+        return redirect(url_for('view_table', db_name=db_name, table_name=table_name))
+
+
+@app.route("/delete_record/<db_name>/<table_name>/<item_id>", methods=["GET", "DELETE", "POST"])
+def delete_record(db_name, table_name, item_id):
+    """Delete a record from the specified table"""
+    if 'username' not in session:
+        if request.method == "DELETE":
+            return jsonify({"success": False, "message": "Not authenticated"}), 401
+        flash("Please log in to access this page.")
+        return redirect(url_for('login'))
     
-    return render_template("table_view.html", db_name=db_name, table_name=table_name, 
-                          columns=columns, rows=rows)
+    try:
+        # Verify access
+        databases = db_manager.list_databases(session['username'], session.get('role'))
+        db_exists = any(db['name'] == db_name for db in databases)
+        
+        if not db_exists:
+            if request.method == "DELETE":
+                return jsonify({"success": False, "message": "Database not found"}), 404
+            flash(f"Database '{db_name}' not found.")
+            return redirect(url_for('home'))
+        
+        # Find the record to delete
+        items = db_manager.get_database_items(db_name, session['username'], session.get('role'))
+        target_item = None
+        
+        for item in items:
+            try:
+                filename = os.path.basename(item["path"])
+                if "_" in filename:
+                    file_id = filename.split("_")[1].split(".")[0]
+                else:
+                    file_id = filename.split(".")[0]
+                
+                if file_id == item_id:
+                    with open(item["path"], "r", encoding='utf-8') as f:
+                        data = json.load(f)
+                        if data.get("table") == table_name:
+                            target_item = item
+                            break
+            except Exception as e:
+                continue
+        
+        if not target_item:
+            if request.method == "DELETE":
+                return jsonify({"success": False, "message": "Record not found"}), 404
+            flash("Record not found.")
+            return redirect(url_for('view_table', db_name=db_name, table_name=table_name))
+        
+        # Delete the record
+        try:
+            os.remove(target_item["path"])
+            
+            if request.method == "DELETE":
+                return jsonify({"success": True, "message": "Record deleted successfully"})
+            else:
+                flash("Record deleted successfully!")
+                
+        except OSError as e:
+            if request.method == "DELETE":
+                return jsonify({"success": False, "message": "Failed to delete record"}), 500
+            flash("Failed to delete record.")
+        
+        return redirect(url_for('view_table', db_name=db_name, table_name=table_name))
+            
+    except Exception as e:
+        print(f"Error in delete_record: {str(e)}")
+        if request.method == "DELETE":
+            return jsonify({"success": False, "message": str(e)}), 500
+        else:
+            flash(f"Error deleting record: {str(e)}")
+            return redirect(url_for('view_table', db_name=db_name, table_name=table_name))
+
+
+def get_table_schema(db_name, table_name):
+    """Get the schema for a specific table"""
+    try:
+        databases = db_manager.list_databases(session.get('username', ''), session.get('role', ''))
+        db_info = next((db for db in databases if db.get("name") == db_name), None)
+        
+        if db_info and "path" in db_info:
+            schema_file = os.path.join(db_info["path"], "schema.json")
+            if os.path.exists(schema_file):
+                with open(schema_file, "r", encoding='utf-8') as f:
+                    schema = json.load(f)
+                    return schema.get("tables", {}).get(table_name)
+        return None
+    except Exception as e:
+        print(f"Error getting table schema: {str(e)}")
+        return None
 
 
 @app.route("/create_database", methods=["GET", "POST"])
@@ -677,13 +925,15 @@ def create_database():
     
     return render_template("create_database.html")
 
-# Also add this route to handle the /create_db URL (alternative endpoint)
+
+# Alternative endpoint for create database
 @app.route("/create_db", methods=["GET", "POST"])
 def create_db():
     """Alternative endpoint for create database"""
     return create_database()
 
-# Add this debugging route to check what routes are available
+
+# Debug route to check available routes
 @app.route("/debug/routes")
 def debug_routes():
     """Debug route to show all available routes"""
@@ -719,12 +969,11 @@ if __name__ == "__main__":
     print("📊 Available endpoints:")
     print(f"   • Home:            http://{local_ip}:1337/")
     print(f"   • Login:           http://{local_ip}:1337/login")
-    print(f"   • Dashboard:       http://{local_ip}:1337/blockchain-dashboard")
+    print(f"   • Dashboard:       http://{local_ip}:1337/blockchain")
     print(f"   • API Chain:       http://{local_ip}:1337/api/chain")
     print(f"   • API Status:      http://{local_ip}:1337/api/status")
     print("="*50)
     print("🔥 Server is running... Press Ctrl+C to stop")
     print("="*50)
     
-    # CRITICAL FIX: Add host="0.0.0.0" to accept external connections
     app.run(host="0.0.0.0", port=1337, debug=True)

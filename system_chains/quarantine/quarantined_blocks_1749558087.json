@@ -1,0 +1,32 @@
+{
+    "quarantine_timestamp": 1749558087.0369759,
+    "quarantine_reason": "Blockchain infection detected",
+    "infected_blocks": [
+        {
+            "block_id": 54,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "263215ccc598ad0bb700178ba351d7808c6a832d4c8b7f465069ca650ab1f7f4",
+            "calculated_hash": "5103eb22fd29f6ae04256bcb76ba9f557ef7a799cf00bf571ed78d210fd5b442",
+            "block_data": {
+                "action": "register",
+                "username": "admin",
+                "timestamp": 1749489353.677121
+            },
+            "timestamp": 1749489353.677127,
+            "severity": "CRITICAL"
+        }
+    ],
+    "quarantined_block_data": [
+        {
+            "index": 54,
+            "timestamp": 1749489353.677127,
+            "data": {
+                "action": "register",
+                "username": "admin",
+                "timestamp": 1749489353.677121
+            },
+            "previous_hash": "b6a1f0752bdfad55bcb5fe233f8aaed2ba27d396238150fb120dba30026b4689",
+            "hash": "263215ccc598ad0bb700178ba351d7808c6a832d4c8b7f465069ca650ab1f7f4"
+        }
+    ]
+}

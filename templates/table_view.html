@@ -1,44 +1,912 @@
 {% extends "layout.html" %}
 
-{% block title %}Data in {{ table_name }}{% endblock %}
+{% block title %}{{ table_name }} - {{ db_name }}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Data in {{ table_name }} ({{ db_name }})</h2>
-    
-    <a href="{{ url_for('add_record', db_name=db_name, table_name=table_name) }}" class="btn">Add New Record</a>
-    
-    {% if rows %}
-    <div style="overflow-x: auto; margin-top: 1rem;">
-        <table>
-            <thead>
-                <tr>
-                    {% for col in columns %}
-                    <th>{{ col }}</th>
-                    {% endfor %}
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in rows %}
-                <tr>
-                    {% for val in row %}
-                    <td>{{ val }}</td>
-                    {% endfor %}
-                    <td>
-                        <a href="{{ url_for('delete_record', db_name=db_name, table_name=table_name, item_id=row[0]) }}" 
-                           class="btn btn-danger" 
-                           onclick="return confirm('Are you sure you want to delete this record?')">Delete</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<style>
+    .table-view-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .table-title {
+        font-size: 2.2rem;
+        font-weight: 300;
+        margin: 0 0 10px 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .table-subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+
+    .table-stats {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 10px 15px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        font-size: 0.9rem;
+    }
+
+    .breadcrumb {
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .breadcrumb a {
+        color: #667eea;
+        text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .controls-section {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border: 1px solid #f0f0f0;
+    }
+
+    .controls-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .search-filters {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+        flex: 1;
+    }
+
+    .search-container {
+        position: relative;
+        min-width: 300px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 20px 12px 45px;
+        border: 2px solid #e0e6ed;
+        border-radius: 25px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+
+    .filter-select {
+        padding: 12px 15px;
+        border: 2px solid #e0e6ed;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 8px 15px;
+        font-size: 0.8rem;
+    }
+
+    .btn-danger:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #666;
+        border: 1px solid #e0e6ed;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+
+    .btn-small {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f0f0f0;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    .data-table th {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        color: #333;
+        font-weight: 600;
+        padding: 15px 12px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        white-space: nowrap;
+    }
+
+    .data-table th:hover {
+        background: linear-gradient(135deg, #e9ecef, #dee2e6);
+        cursor: pointer;
+    }
+
+    .data-table td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .data-table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f8f9ff;
+        transform: scale(1.01);
+    }
+
+    .data-table tbody tr:nth-child(even) {
+        background-color: #fafbfc;
+    }
+
+    .data-table tbody tr:nth-child(even):hover {
+        background-color: #f0f4ff;
+    }
+
+    .actions-cell {
+        white-space: nowrap;
+        min-width: 120px;
+    }
+
+    .cell-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cell-type {
+        font-size: 0.7rem;
+        background: #e9ecef;
+        color: #666;
+        padding: 2px 6px;
+        border-radius: 10px;
+        text-transform: uppercase;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #666;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .empty-title {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .empty-description {
+        font-size: 1rem;
+        margin-bottom: 30px;
+        line-height: 1.6;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 25px;
+        padding: 20px;
+    }
+
+    .pagination-info {
+        color: #666;
+        font-size: 0.9rem;
+        margin: 0 20px;
+    }
+
+    .pagination-btn {
+        padding: 8px 12px;
+        border: 1px solid #e0e6ed;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: #f8f9fa;
+        border-color: #667eea;
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .sort-indicator {
+        margin-left: 5px;
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .error-state {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border: 1px solid #f5c6cb;
+    }
+
+    .success-message {
+        background: #d4edda;
+        color: #155724;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border: 1px solid #c3e6cb;
+    }
+
+    .record-count {
+        background: #667eea;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .table-view-container {
+            padding: 10px;
+        }
+        
+        .table-title {
+            font-size: 1.8rem;
+        }
+        
+        .controls-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-container {
+            min-width: auto;
+        }
+        
+        .action-buttons {
+            justify-content: center;
+        }
+        
+        .table-stats {
+            justify-content: center;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 8px 6px;
+            font-size: 0.8rem;
+        }
+    }
+</style>
+
+<div class="table-view-container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <a href="{{ url_for('home') }}">🏠 Home</a> / 
+        <a href="{{ url_for('list_tables', db_name=db_name) }}">📊 {{ db_name }}</a> / 
+        <span>📋 {{ table_name }}</span>
     </div>
+
+    <!-- Table Header -->
+    <div class="table-header">
+        <h1 class="table-title">📋 {{ table_name }}</h1>
+        <div class="table-subtitle">Database: {{ db_name }}</div>
+        <div class="table-stats">
+            <div class="stat-item">
+                <span>📊</span>
+                <span>Records: <span class="record-count" id="record-count">{{ rows|length if rows else 0 }}</span></span>
+            </div>
+            {% if columns %}
+            <div class="stat-item">
+                <span>📝</span>
+                <span>Columns: {{ columns|length }}</span>
+            </div>
+            {% endif %}
+            <div class="stat-item">
+                <span>🔒</span>
+                <span>Secured</span>
+            </div>
+            <div class="stat-item">
+                <span>⚡</span>
+                <span>Live Data</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls Section -->
+    <div class="controls-section">
+        <div class="controls-row">
+            <div class="search-filters">
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" 
+                           class="search-input" 
+                           id="recordSearch" 
+                           placeholder="Search records..."
+                           onkeyup="filterRecords()">
+                </div>
+                
+                {% if columns %}
+                <select class="filter-select" id="columnFilter" onchange="filterRecords()">
+                    <option value="">All Columns</option>
+                    {% for col in columns %}
+                    <option value="{{ loop.index0 }}">{{ col }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                
+                <select class="filter-select" id="rowsPerPage" onchange="updatePagination()">
+                    <option value="10">10 rows</option>
+                    <option value="25" selected>25 rows</option>
+                    <option value="50">50 rows</option>
+                    <option value="100">100 rows</option>
+                    <option value="-1">All rows</option>
+                </select>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="addNewRecord()">
+                    ➕ Add Record
+                </button>
+                <button class="btn btn-secondary" onclick="refreshData()">
+                    🔄 Refresh
+                </button>
+                <button class="btn btn-secondary" onclick="exportData()">
+                    📥 Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    {% if rows and columns %}
+    <div class="table-container">
+        <div class="table-wrapper">
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        {% for col in columns %}
+                        <th onclick="sortTable({{ loop.index0 }})" style="cursor: pointer;">
+                            {{ col }}
+                            <span class="sort-indicator" id="sort-{{ loop.index0 }}"></span>
+                        </th>
+                        {% endfor %}
+                        <th class="actions-cell">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for row in rows %}
+                    <tr data-row-id="{{ row[0] if row else '' }}">
+                        {% for val in row %}
+                        <td title="{{ val }}">
+                            <div class="cell-content">
+                                {{ val if val is not none else '-' }}
+                            </div>
+                        </td>
+                        {% endfor %}
+                        <td class="actions-cell">
+                            <button class="btn btn-danger btn-small" 
+                                    onclick="deleteRecord('{{ row[0] if row else '' }}', this)"
+                                    title="Delete record">
+                                🗑️ Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination" id="pagination">
+            <button class="pagination-btn" id="prevBtn" onclick="previousPage()" disabled>
+                ⬅️ Previous
+            </button>
+            <div class="pagination-info" id="paginationInfo">
+                Showing 1-{{ rows|length if rows else 0 }} of {{ rows|length if rows else 0 }} records
+            </div>
+            <button class="pagination-btn" id="nextBtn" onclick="nextPage()" disabled>
+                Next ➡️
+            </button>
+        </div>
+    </div>
+
+    {% elif rows and not columns %}
+    <div class="error-state">
+        <strong>⚠️ Data Structure Issue</strong><br>
+        The table has data but column information is missing. This might be due to a schema issue.
+        <br><br>
+        <strong>Raw Data Preview:</strong>
+        <pre style="margin-top: 10px; font-size: 0.8rem;">{{ rows[:3] | tojson(indent=2) }}</pre>
+    </div>
+
     {% else %}
-    <p>No records found in this table.</p>
+    <!-- Empty State -->
+    <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No Records Found</div>
+        <div class="empty-description">
+            This table doesn't have any records yet. Start by adding your first record to begin organizing your data.
+        </div>
+        <button class="btn btn-success" onclick="addNewRecord()">
+            🚀 Add First Record
+        </button>
+    </div>
     {% endif %}
-    
-    <a href="{{ url_for('list_tables', db_name=db_name) }}" class="btn" style="margin-top: 1rem;">Back to Tables</a>
+
+    <!-- Back Navigation -->
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{{ url_for('list_tables', db_name=db_name) }}" class="btn btn-secondary">
+            🔙 Back to Tables
+        </a>
+    </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 1000; backdrop-filter: blur(5px);">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+        <div class="loading-spinner"></div>
+        <div>Processing request...</div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let rowsPerPage = 25;
+    let filteredRows = [];
+    let sortColumn = -1;
+    let sortDirection = 'asc';
+    let allRows = [];
+
+    // Initialize data
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTable();
+        loadAllRows();
+        updatePagination();
+    });
+
+    function initializeTable() {
+        const tableBody = document.getElementById('tableBody');
+        if (tableBody) {
+            allRows = Array.from(tableBody.querySelectorAll('tr')).map(row => {
+                return Array.from(row.cells).slice(0, -1).map(cell => cell.textContent.trim());
+            });
+            filteredRows = [...allRows];
+        }
+    }
+
+    function loadAllRows() {
+        // Store original row data for filtering and sorting
+        const rows = document.querySelectorAll('#tableBody tr');
+        allRows = [];
+        rows.forEach(row => {
+            const rowData = [];
+            const cells = row.querySelectorAll('td:not(.actions-cell)');
+            cells.forEach(cell => {
+                rowData.push(cell.textContent.trim());
+            });
+            if (rowData.length > 0) {
+                allRows.push({
+                    data: rowData,
+                    element: row,
+                    id: row.getAttribute('data-row-id')
+                });
+            }
+        });
+        filteredRows = [...allRows];
+    }
+
+    function filterRecords() {
+        const searchTerm = document.getElementById('recordSearch').value.toLowerCase();
+        const columnFilter = document.getElementById('columnFilter').value;
+        
+        filteredRows = allRows.filter(row => {
+            if (columnFilter && columnFilter !== '') {
+                const columnIndex = parseInt(columnFilter);
+                const cellValue = row.data[columnIndex] || '';
+                return cellValue.toLowerCase().includes(searchTerm);
+            } else {
+                return row.data.some(cell => 
+                    cell.toLowerCase().includes(searchTerm)
+                );
+            }
+        });
+        
+        currentPage = 1;
+        displayFilteredRows();
+        updatePagination();
+        updateRecordCount();
+    }
+
+    function displayFilteredRows() {
+        const tableBody = document.getElementById('tableBody');
+        if (!tableBody) return;
+
+        // Hide all rows first
+        allRows.forEach(row => {
+            row.element.style.display = 'none';
+        });
+
+        // Calculate pagination
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = rowsPerPage === -1 ? filteredRows.length : startIndex + rowsPerPage;
+        const pageRows = filteredRows.slice(startIndex, endIndex);
+
+        // Show filtered rows
+        pageRows.forEach(row => {
+            row.element.style.display = '';
+        });
+    }
+
+    function sortTable(columnIndex) {
+        // Update sort indicators
+        document.querySelectorAll('.sort-indicator').forEach(indicator => {
+            indicator.textContent = '';
+        });
+
+        if (sortColumn === columnIndex) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortColumn = columnIndex;
+            sortDirection = 'asc';
+        }
+
+        const indicator = document.getElementById(`sort-${columnIndex}`);
+        if (indicator) {
+            indicator.textContent = sortDirection === 'asc' ? '▲' : '▼';
+        }
+
+        // Sort the filtered rows
+        filteredRows.sort((a, b) => {
+            const aVal = a.data[columnIndex] || '';
+            const bVal = b.data[columnIndex] || '';
+            
+            // Try to parse as numbers
+            const aNum = parseFloat(aVal);
+            const bNum = parseFloat(bVal);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+            } else {
+                return sortDirection === 'asc' 
+                    ? aVal.localeCompare(bVal)
+                    : bVal.localeCompare(aVal);
+            }
+        });
+
+        currentPage = 1;
+        displayFilteredRows();
+        updatePagination();
+    }
+
+    function updatePagination() {
+        const rowsPerPageSelect = document.getElementById('rowsPerPage');
+        rowsPerPage = parseInt(rowsPerPageSelect.value);
+        
+        const totalRows = filteredRows.length;
+        const totalPages = rowsPerPage === -1 ? 1 : Math.ceil(totalRows / rowsPerPage);
+        
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const paginationInfo = document.getElementById('paginationInfo');
+        
+        if (prevBtn && nextBtn && paginationInfo) {
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages || totalPages <= 1;
+            
+            const startRecord = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+            const endRecord = rowsPerPage === -1 ? totalRows : Math.min(currentPage * rowsPerPage, totalRows);
+            
+            paginationInfo.textContent = `Showing ${startRecord}-${endRecord} of ${totalRows} records`;
+        }
+        
+        displayFilteredRows();
+    }
+
+    function previousPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            updatePagination();
+        }
+    }
+
+    function nextPage() {
+        const totalPages = rowsPerPage === -1 ? 1 : Math.ceil(filteredRows.length / rowsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            updatePagination();
+        }
+    }
+
+    function updateRecordCount() {
+        const recordCount = document.getElementById('record-count');
+        if (recordCount) {
+            recordCount.textContent = filteredRows.length;
+        }
+    }
+
+    function addNewRecord() {
+        // This should redirect to add record page when available
+        const url = `{{ url_for('add_record', db_name=db_name, table_name=table_name) if 'add_record' in (get_flashed_messages() | list + []) else '#' }}`;
+        if (url !== '#') {
+            window.location.href = url;
+        } else {
+            alert('Add record functionality will be available soon!');
+        }
+    }
+
+    function deleteRecord(recordId, button) {
+        if (!recordId) {
+            alert('Unable to delete record: Invalid record ID');
+            return;
+        }
+
+        if (confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
+            showLoading();
+            
+            // Create delete URL - you may need to adjust this based on your routing
+            const deleteUrl = `{{ url_for('delete_record', db_name=db_name, table_name=table_name, item_id='RECORD_ID') }}`.replace('RECORD_ID', recordId);
+            
+            fetch(deleteUrl, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Remove the row from the table
+                    const row = button.closest('tr');
+                    if (row) {
+                        row.remove();
+                        // Update our data arrays
+                        allRows = allRows.filter(r => r.id !== recordId);
+                        filteredRows = filteredRows.filter(r => r.id !== recordId);
+                        updatePagination();
+                        updateRecordCount();
+                        showSuccessMessage('Record deleted successfully!');
+                    }
+                } else {
+                    throw new Error('Failed to delete record');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete record. Please try again.');
+            })
+            .finally(() => {
+                hideLoading();
+            });
+        }
+    }
+
+    function refreshData() {
+        showLoading();
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    }
+
+    function exportData() {
+        if (filteredRows.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        const headers = [{% if columns %}'{{ columns | join("','") }}'{% endif %}];
+        const csvContent = [headers].concat(
+            filteredRows.map(row => row.data)
+        ).map(row => 
+            row.map(cell => `"${cell}"`).join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `{{ table_name }}_export_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'block';
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    function showSuccessMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'success-message';
+        messageDiv.textContent = message;
+        
+        const container = document.querySelector('.table-view-container');
+        container.insertBefore(messageDiv, container.firstChild);
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('recordSearch').focus();
+        }
+        
+        // Escape to clear search
+        if (e.key === 'Escape') {
+            const searchInput = document.getElementById('recordSearch');
+            if (searchInput.value) {
+                searchInput.value = '';
+                filterRecords();
+            }
+        }
+    });
+</script>
+
 {% endblock %}

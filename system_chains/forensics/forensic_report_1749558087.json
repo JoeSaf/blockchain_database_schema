@@ -1,0 +1,26 @@
+{
+    "forensic_timestamp": 1749558087.037123,
+    "analysis_type": "Blockchain Infection Analysis",
+    "infected_blocks": [
+        {
+            "block_id": 54,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "263215ccc598ad0bb700178ba351d7808c6a832d4c8b7f465069ca650ab1f7f4",
+            "calculated_hash": "5103eb22fd29f6ae04256bcb76ba9f557ef7a799cf00bf571ed78d210fd5b442",
+            "block_data": {
+                "action": "register",
+                "username": "admin",
+                "timestamp": 1749489353.677121
+            },
+            "timestamp": 1749489353.677127,
+            "severity": "CRITICAL"
+        }
+    ],
+    "quarantine_actions": [
+        "Block #54 quarantined"
+    ],
+    "file_locations": {
+        "fallback_database": "system_chains/fallbacks/enhanced_fallback_db_1749558087.json",
+        "quarantined_blocks": "system_chains/quarantine/quarantined_blocks_1749558087.json"
+    }
+}

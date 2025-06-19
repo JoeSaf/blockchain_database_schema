@@ -1,0 +1,57 @@
+{
+    "quarantine_timestamp": 1749559474.26343,
+    "quarantine_reason": "Blockchain infection detected",
+    "infected_blocks": [
+        {
+            "block_id": 1,
+            "infection_type": "HASH_MISMATCH",
+            "stored_hash": "b65c805eaeb98d037801ddeb2e37f412f09cf4f887cba898715093fc82243978",
+            "calculated_hash": "a7a32a52008b22dfe49321be24e4e0d6e5490138b44e93e3ef877129952a0faf",
+            "block_data": {
+                "action": "register",
+                "username": "3",
+                "role": "user",
+                "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2cfMupSuk2SdqSPYy4jd\nLn7swvmXWYYJ75T++ScWxxm+fRUTeViBNzvYio6DIdTS1t8W7Ln1vaa2eJPLKsjU\n+lGPeiIEl4WLeJmWwvNfMuxu6+tB6gKhil/qi3/AUs2pqmZtPe3RokJ5WIMBX7tJ\nqGXrx8oib0gXY6sTvjZIufOiPSuVWdHqVB2j/b8Tw+qhmlnot5T4AxCai5cMEXCg\n99RaNrgFteD+rQ1UomfAvYKlRdSOaloXkL1nRT1SJEG78cWY01sYd08RZ9VbKbit\npRSnxv+csZDxZUH7ZYfM2HJH8h8ZtfWYN5UXCekAav88Repb2mkCj3KucMuAx9Kx\nlQIDAQAB\n-----END PUBLIC KEY-----\n",
+                "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIFNTBfBgkqhkiG9w0BBQ0wUjAxBgkqhkiG9w0BBQwwJAQQ5kWksJfAmQuEMmfz\nttmc+AICCAAwDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEED5mCyrqIpVhWvM4\nCmT0vBAEggTQQ4HkgqxUVrg98FG2ZGex1T8lMJBhXQMEgbWitNTiNGRDT5EqbRFs\n+ChX4+O4VOJLBwgFctzaLSy5zbO2iM3w+dNk4/yEsom13fH9CU+FZbB4oNedMTwE\n03K6UebrBGQ8MT7jrAsg9bZqbIb/343MaN56MQW18sY+lXpuyU3OlE4vnhhvm7FF\nBU6ZnLDSQYWiYy0BgbXzD4aDB+FNyyG81gIg1W8BS7fuKE45J5i4RVaoSOezEcOM\nKs6rXGQGB5SsmHYIPFcUwpgGEGRlAJ+l0zCLjlUWtBeFKWq2WV8snTXKHvA7w3h+\n9xRdpsQBpSzP77IBPpEvMvhiD8o19e1y2gZWx9GQ390dYbkO6TchiiFDoHNjx63A\naEn4JNE8Yc5ZAmk/cNbhR4CYzjPWLrIdUYkDGNEGgCJafbsGgTO2qT9+kyMM+VMh\nhJk/xPmVoP7qj55oqjk3/+854vEdw2XgRRyNhwsAzEtsffWkb38HqWli5gjx3nte\n7AqftuQU7qGKkPtP7EOY910uMnWEqqrStdwOGAnhmgeVTHr9iofWvjGTBAPZInlS\nNlrYfUEp3U15e6EwZQRXzYOUtWEuKt/8ij+3KlkBvG57fo/2GP1kuW9XmZKgJl+j\nTdL76/G6oLGh+vAXLVyS+hwnzJ95DV9wPG/EFGPqd8oTc0gQXksrbLT3Pd3KWnk8\nzKnUHAvK1CV6HXUJUtJwMk+ykuQjqyzu2IF63ursl7mG5RuGQPa6MKUbbGXmkcV8\nIVrEy8/KdFOLcmV2Rsg3TTq5CISsz5uaTgqOO/zrtkUm7xvV1hDbZoZjq7a9MnqC\n7PjFVRiX8nPW4bHIb6gzd0yRjbVrtjEv0IOYDqDAYU/TGOYV9AHmvLH4632VF2zl\nPnyEpQamQdJZAYJjq8+fTbN1sAlRvsNEDYf67MlPffnV67Qg3+MXlidtxeLNtPqn\nCUczPxLrsUr0H3IBhbNiMEtcWEs5fhhofPsLG2GKbSR3YcBgynYWO49+iHD7M5Xj\nWtrlfrxFHwGH+T4LM1/ZKusWYWcG17ZJnK/KUR06dUtrHmKma9TgieqYSVE749YO\noCuleVn6mHigLDCBwijC6Qjlp7H2ppHeEeuEg+CMz0Vgdru74fYGfXqyheiFz5X2\nX0zeYDhS6p73+hTDAfhuWIUzUXL4IZYCjss6wC6GRsmw2IpbOPzqChSohA6xN/o4\nOiN0E8hBUnv1POajwfAPxiUI9p8V4khL948Fv71pS4Ksy4mYI0WFw/ZdxtlEZnRH\nwBXNg1K/4yM25Q9DE9a/nM/RAjZOt5ERMOSijvcZsSc7RrjaFGfcm+LMB8RQYgCh\n7dsDXd9tepfjYlUtFnr1vxocmr/KLmcHXv6OFfRC0bvN8/8YVdUQkce7W3P9f/Bh\nbgFEOWj0vFlYqHEXxofSilN0Ydsb4UkGa9HJrLabopBuz3/ZzPBp1b6Bi3IeHL5r\nVeFxp3Q0vBTuimOeSnED6cMEPaUCZII6ipVUibky1I0T50bnetMAEAJ9SUtrggJK\nMNRG3GNIoXpEXMHDxTvnn9tJGzHHbb1+HzJW5JbHg34UM7TUvYdRQJyF2uOOAyjX\nQMmkJP/AWUFIpoToaVAWUSHh3V+2pgKD9X7f3AW5+1GrZVptSjGXN+A=\n-----END ENCRYPTED PRIVATE KEY-----\n",
+                "timestamp": 1743970617.5114334,
+                "previous": "senjo"
+            },
+            "timestamp": 1743970617.5114388,
+            "severity": "CRITICAL"
+        },
+        {
+            "block_id": 1,
+            "infection_type": "CHAIN_BREAK",
+            "expected_previous": "0dc77d199eaa496401a018f2e49ff813d62b629273bedf93eb1b6c6243c8e052",
+            "actual_previous": "0dc77d199gdf4a496401a018f2e49ff813d62b629273bedf93eb1b6c6243c8e052",
+            "block_data": {
+                "action": "register",
+                "username": "3",
+                "role": "user",
+                "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2cfMupSuk2SdqSPYy4jd\nLn7swvmXWYYJ75T++ScWxxm+fRUTeViBNzvYio6DIdTS1t8W7Ln1vaa2eJPLKsjU\n+lGPeiIEl4WLeJmWwvNfMuxu6+tB6gKhil/qi3/AUs2pqmZtPe3RokJ5WIMBX7tJ\nqGXrx8oib0gXY6sTvjZIufOiPSuVWdHqVB2j/b8Tw+qhmlnot5T4AxCai5cMEXCg\n99RaNrgFteD+rQ1UomfAvYKlRdSOaloXkL1nRT1SJEG78cWY01sYd08RZ9VbKbit\npRSnxv+csZDxZUH7ZYfM2HJH8h8ZtfWYN5UXCekAav88Repb2mkCj3KucMuAx9Kx\nlQIDAQAB\n-----END PUBLIC KEY-----\n",
+                "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIFNTBfBgkqhkiG9w0BBQ0wUjAxBgkqhkiG9w0BBQwwJAQQ5kWksJfAmQuEMmfz\nttmc+AICCAAwDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEED5mCyrqIpVhWvM4\nCmT0vBAEggTQQ4HkgqxUVrg98FG2ZGex1T8lMJBhXQMEgbWitNTiNGRDT5EqbRFs\n+ChX4+O4VOJLBwgFctzaLSy5zbO2iM3w+dNk4/yEsom13fH9CU+FZbB4oNedMTwE\n03K6UebrBGQ8MT7jrAsg9bZqbIb/343MaN56MQW18sY+lXpuyU3OlE4vnhhvm7FF\nBU6ZnLDSQYWiYy0BgbXzD4aDB+FNyyG81gIg1W8BS7fuKE45J5i4RVaoSOezEcOM\nKs6rXGQGB5SsmHYIPFcUwpgGEGRlAJ+l0zCLjlUWtBeFKWq2WV8snTXKHvA7w3h+\n9xRdpsQBpSzP77IBPpEvMvhiD8o19e1y2gZWx9GQ390dYbkO6TchiiFDoHNjx63A\naEn4JNE8Yc5ZAmk/cNbhR4CYzjPWLrIdUYkDGNEGgCJafbsGgTO2qT9+kyMM+VMh\nhJk/xPmVoP7qj55oqjk3/+854vEdw2XgRRyNhwsAzEtsffWkb38HqWli5gjx3nte\n7AqftuQU7qGKkPtP7EOY910uMnWEqqrStdwOGAnhmgeVTHr9iofWvjGTBAPZInlS\nNlrYfUEp3U15e6EwZQRXzYOUtWEuKt/8ij+3KlkBvG57fo/2GP1kuW9XmZKgJl+j\nTdL76/G6oLGh+vAXLVyS+hwnzJ95DV9wPG/EFGPqd8oTc0gQXksrbLT3Pd3KWnk8\nzKnUHAvK1CV6HXUJUtJwMk+ykuQjqyzu2IF63ursl7mG5RuGQPa6MKUbbGXmkcV8\nIVrEy8/KdFOLcmV2Rsg3TTq5CISsz5uaTgqOO/zrtkUm7xvV1hDbZoZjq7a9MnqC\n7PjFVRiX8nPW4bHIb6gzd0yRjbVrtjEv0IOYDqDAYU/TGOYV9AHmvLH4632VF2zl\nPnyEpQamQdJZAYJjq8+fTbN1sAlRvsNEDYf67MlPffnV67Qg3+MXlidtxeLNtPqn\nCUczPxLrsUr0H3IBhbNiMEtcWEs5fhhofPsLG2GKbSR3YcBgynYWO49+iHD7M5Xj\nWtrlfrxFHwGH+T4LM1/ZKusWYWcG17ZJnK/KUR06dUtrHmKma9TgieqYSVE749YO\noCuleVn6mHigLDCBwijC6Qjlp7H2ppHeEeuEg+CMz0Vgdru74fYGfXqyheiFz5X2\nX0zeYDhS6p73+hTDAfhuWIUzUXL4IZYCjss6wC6GRsmw2IpbOPzqChSohA6xN/o4\nOiN0E8hBUnv1POajwfAPxiUI9p8V4khL948Fv71pS4Ksy4mYI0WFw/ZdxtlEZnRH\nwBXNg1K/4yM25Q9DE9a/nM/RAjZOt5ERMOSijvcZsSc7RrjaFGfcm+LMB8RQYgCh\n7dsDXd9tepfjYlUtFnr1vxocmr/KLmcHXv6OFfRC0bvN8/8YVdUQkce7W3P9f/Bh\nbgFEOWj0vFlYqHEXxofSilN0Ydsb4UkGa9HJrLabopBuz3/ZzPBp1b6Bi3IeHL5r\nVeFxp3Q0vBTuimOeSnED6cMEPaUCZII6ipVUibky1I0T50bnetMAEAJ9SUtrggJK\nMNRG3GNIoXpEXMHDxTvnn9tJGzHHbb1+HzJW5JbHg34UM7TUvYdRQJyF2uOOAyjX\nQMmkJP/AWUFIpoToaVAWUSHh3V+2pgKD9X7f3AW5+1GrZVptSjGXN+A=\n-----END ENCRYPTED PRIVATE KEY-----\n",
+                "timestamp": 1743970617.5114334,
+                "previous": "senjo"
+            },
+            "timestamp": 1743970617.5114388,
+            "severity": "CRITICAL"
+        }
+    ],
+    "quarantined_block_data": [
+        {
+            "index": 1,
+            "timestamp": 1743970617.5114388,
+            "data": {
+                "action": "register",
+                "username": "3",
+                "role": "user",
+                "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2cfMupSuk2SdqSPYy4jd\nLn7swvmXWYYJ75T++ScWxxm+fRUTeViBNzvYio6DIdTS1t8W7Ln1vaa2eJPLKsjU\n+lGPeiIEl4WLeJmWwvNfMuxu6+tB6gKhil/qi3/AUs2pqmZtPe3RokJ5WIMBX7tJ\nqGXrx8oib0gXY6sTvjZIufOiPSuVWdHqVB2j/b8Tw+qhmlnot5T4AxCai5cMEXCg\n99RaNrgFteD+rQ1UomfAvYKlRdSOaloXkL1nRT1SJEG78cWY01sYd08RZ9VbKbit\npRSnxv+csZDxZUH7ZYfM2HJH8h8ZtfWYN5UXCekAav88Repb2mkCj3KucMuAx9Kx\nlQIDAQAB\n-----END PUBLIC KEY-----\n",
+                "private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIFNTBfBgkqhkiG9w0BBQ0wUjAxBgkqhkiG9w0BBQwwJAQQ5kWksJfAmQuEMmfz\nttmc+AICCAAwDAYIKoZIhvcNAgkFADAdBglghkgBZQMEASoEED5mCyrqIpVhWvM4\nCmT0vBAEggTQQ4HkgqxUVrg98FG2ZGex1T8lMJBhXQMEgbWitNTiNGRDT5EqbRFs\n+ChX4+O4VOJLBwgFctzaLSy5zbO2iM3w+dNk4/yEsom13fH9CU+FZbB4oNedMTwE\n03K6UebrBGQ8MT7jrAsg9bZqbIb/343MaN56MQW18sY+lXpuyU3OlE4vnhhvm7FF\nBU6ZnLDSQYWiYy0BgbXzD4aDB+FNyyG81gIg1W8BS7fuKE45J5i4RVaoSOezEcOM\nKs6rXGQGB5SsmHYIPFcUwpgGEGRlAJ+l0zCLjlUWtBeFKWq2WV8snTXKHvA7w3h+\n9xRdpsQBpSzP77IBPpEvMvhiD8o19e1y2gZWx9GQ390dYbkO6TchiiFDoHNjx63A\naEn4JNE8Yc5ZAmk/cNbhR4CYzjPWLrIdUYkDGNEGgCJafbsGgTO2qT9+kyMM+VMh\nhJk/xPmVoP7qj55oqjk3/+854vEdw2XgRRyNhwsAzEtsffWkb38HqWli5gjx3nte\n7AqftuQU7qGKkPtP7EOY910uMnWEqqrStdwOGAnhmgeVTHr9iofWvjGTBAPZInlS\nNlrYfUEp3U15e6EwZQRXzYOUtWEuKt/8ij+3KlkBvG57fo/2GP1kuW9XmZKgJl+j\nTdL76/G6oLGh+vAXLVyS+hwnzJ95DV9wPG/EFGPqd8oTc0gQXksrbLT3Pd3KWnk8\nzKnUHAvK1CV6HXUJUtJwMk+ykuQjqyzu2IF63ursl7mG5RuGQPa6MKUbbGXmkcV8\nIVrEy8/KdFOLcmV2Rsg3TTq5CISsz5uaTgqOO/zrtkUm7xvV1hDbZoZjq7a9MnqC\n7PjFVRiX8nPW4bHIb6gzd0yRjbVrtjEv0IOYDqDAYU/TGOYV9AHmvLH4632VF2zl\nPnyEpQamQdJZAYJjq8+fTbN1sAlRvsNEDYf67MlPffnV67Qg3+MXlidtxeLNtPqn\nCUczPxLrsUr0H3IBhbNiMEtcWEs5fhhofPsLG2GKbSR3YcBgynYWO49+iHD7M5Xj\nWtrlfrxFHwGH+T4LM1/ZKusWYWcG17ZJnK/KUR06dUtrHmKma9TgieqYSVE749YO\noCuleVn6mHigLDCBwijC6Qjlp7H2ppHeEeuEg+CMz0Vgdru74fYGfXqyheiFz5X2\nX0zeYDhS6p73+hTDAfhuWIUzUXL4IZYCjss6wC6GRsmw2IpbOPzqChSohA6xN/o4\nOiN0E8hBUnv1POajwfAPxiUI9p8V4khL948Fv71pS4Ksy4mYI0WFw/ZdxtlEZnRH\nwBXNg1K/4yM25Q9DE9a/nM/RAjZOt5ERMOSijvcZsSc7RrjaFGfcm+LMB8RQYgCh\n7dsDXd9tepfjYlUtFnr1vxocmr/KLmcHXv6OFfRC0bvN8/8YVdUQkce7W3P9f/Bh\nbgFEOWj0vFlYqHEXxofSilN0Ydsb4UkGa9HJrLabopBuz3/ZzPBp1b6Bi3IeHL5r\nVeFxp3Q0vBTuimOeSnED6cMEPaUCZII6ipVUibky1I0T50bnetMAEAJ9SUtrggJK\nMNRG3GNIoXpEXMHDxTvnn9tJGzHHbb1+HzJW5JbHg34UM7TUvYdRQJyF2uOOAyjX\nQMmkJP/AWUFIpoToaVAWUSHh3V+2pgKD9X7f3AW5+1GrZVptSjGXN+A=\n-----END ENCRYPTED PRIVATE KEY-----\n",
+                "timestamp": 1743970617.5114334,
+                "previous": "senjo"
+            },
+            "previous_hash": "0dc77d199gdf4a496401a018f2e49ff813d62b629273bedf93eb1b6c6243c8e052",
+            "hash": "b65c805eaeb98d037801ddeb2e37f412f09cf4f887cba898715093fc82243978"
+        }
+    ]
+}

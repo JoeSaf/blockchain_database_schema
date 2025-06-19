@@ -1,32 +1,686 @@
 {% extends "layout.html" %}
 
-{% block title %}Add Record to {{ table_name }}{% endblock %}
+{% block title %}Add Record - {{ table_name }}{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Add New Record to {{ table_name }} ({{ db_name }})</h2>
-    
-    <form method="post" action="{{ url_for('add_record', db_name=db_name, table_name=table_name) }}">
-        {% for field_name, field_type in fields.items() %}
-        <div>
-            <label for="{{ field_name }}">{{ field_name }} ({{ field_type }}):</label>
-            {% if field_type == "bool" %}
-            <select id="{{ field_name }}" name="{{ field_name }}">
-                <option value="true">True</option>
-                <option value="false">False</option>
-            </select>
-            {% else %}
-            <input type="text" id="{{ field_name }}" name="{{ field_name }}" 
-                  {% if field_type == "int" or field_type == "float" %} 
-                  pattern="[0-9]*\.?[0-9]*" 
-                  {% endif %}>
-            {% endif %}
-        </div>
-        {% endfor %}
+<style>
+    .add-record-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .record-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3);
+    }
+
+    .record-header h1 {
+        margin: 0;
+        font-size: 2.2rem;
+        font-weight: 300;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .record-subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+        margin-top: 10px;
+    }
+
+    .breadcrumb {
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .breadcrumb a {
+        color: #28a745;
+        text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .form-container {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f0f0f0;
+    }
+
+    .form-section {
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .field-group {
+        margin-bottom: 20px;
+    }
+
+    .field-label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+
+    .field-type {
+        font-size: 0.8rem;
+        color: #666;
+        background: #f8f9fa;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 8px;
+        font-weight: normal;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e6ed;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #28a745;
+        box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e0e6ed;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: white;
+        cursor: pointer;
+    }
+
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .dynamic-fields {
+        border: 2px dashed #e0e6ed;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .dynamic-field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 15px;
+        align-items: end;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #666;
+        border: 1px solid #e0e6ed;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .btn-small {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+
+    .form-actions {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .help-text {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 5px;
+        line-height: 1.4;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+
+    .alert-warning {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+        color: #856404;
+    }
+
+    .field-counter {
+        background: #28a745;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-left: auto;
+    }
+
+    @media (max-width: 768px) {
+        .add-record-container {
+            padding: 10px;
+        }
         
-        <button type="submit" class="btn">Add Record</button>
-    </form>
-    
-    <a href="{{ url_for('view_table', db_name=db_name, table_name=table_name) }}" class="btn" style="margin-top: 1rem;">Back to Table</a>
+        .record-header h1 {
+            font-size: 1.8rem;
+        }
+        
+        .form-container {
+            padding: 20px;
+        }
+        
+        .dynamic-field-row {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+
+    .loading-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #28a745;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+</style>
+
+<div class="add-record-container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <a href="{{ url_for('home') }}">🏠 Home</a> / 
+        <a href="{{ url_for('list_tables', db_name=db_name) }}">📊 {{ db_name }}</a> / 
+        <a href="{{ url_for('view_table', db_name=db_name, table_name=table_name) }}">📋 {{ table_name }}</a> / 
+        <span>➕ Add Record</span>
+    </div>
+
+    <!-- Header -->
+    <div class="record-header">
+        <h1>➕ Add New Record</h1>
+        <div class="record-subtitle">Table: {{ table_name }} in {{ db_name }}</div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="form-container">
+        <form id="addRecordForm" method="post" action="{{ url_for('add_record', db_name=db_name, table_name=table_name) }}">
+            
+            {% if fields %}
+            <!-- Schema-based Fields -->
+            <div class="form-section">
+                <div class="section-title">
+                    📝 Table Fields
+                    <span class="field-counter">{{ fields|length }} field{{ 's' if fields|length != 1 else '' }}</span>
+                </div>
+                
+                {% for field_name, field_type in fields.items() %}
+                <div class="field-group">
+                    <label for="{{ field_name }}" class="field-label">
+                        {{ field_name.replace('_', ' ').title() }}
+                        <span class="field-type">{{ field_type }}</span>
+                    </label>
+                    
+                    {% if field_type == "bool" %}
+                    <select id="{{ field_name }}" name="{{ field_name }}" class="form-select">
+                        <option value="">Select...</option>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                    </select>
+                    
+                    {% elif field_type == "int" %}
+                    <input type="number" 
+                           id="{{ field_name }}" 
+                           name="{{ field_name }}" 
+                           class="form-input"
+                           step="1"
+                           placeholder="Enter a whole number">
+                    
+                    {% elif field_type == "float" %}
+                    <input type="number" 
+                           id="{{ field_name }}" 
+                           name="{{ field_name }}" 
+                           class="form-input"
+                           step="any"
+                           placeholder="Enter a decimal number">
+                    
+                    {% else %}
+                    <input type="text" 
+                           id="{{ field_name }}" 
+                           name="{{ field_name }}" 
+                           class="form-input"
+                           placeholder="Enter {{ field_name.replace('_', ' ').lower() }}">
+                    {% endif %}
+                    
+                    {% if field_type == "string" %}
+                    <div class="help-text">Text field - enter any text value</div>
+                    {% elif field_type == "int" %}
+                    <div class="help-text">Whole number (e.g., 42, 100, -5)</div>
+                    {% elif field_type == "float" %}
+                    <div class="help-text">Decimal number (e.g., 3.14, 2.5, -1.7)</div>
+                    {% elif field_type == "bool" %}
+                    <div class="help-text">True or False value</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% else %}
+            <!-- No Schema Available -->
+            <div class="alert alert-info">
+                <strong>ℹ️ Dynamic Field Entry</strong><br>
+                No predefined schema found for this table. You can add fields dynamically below.
+            </div>
+            {% endif %}
+            
+            <!-- Dynamic Fields Section -->
+            <div class="form-section">
+                <div class="section-title">
+                    🔧 Additional Fields
+                    <span class="field-counter" id="dynamicFieldCounter">0 field{{ 's' if 0 != 1 else '' }}</span>
+                </div>
+                
+                <div class="help-text" style="margin-bottom: 15px;">
+                    Add custom fields that aren't part of the predefined schema, or use this section if no schema is available.
+                </div>
+                
+                <div class="dynamic-fields" id="dynamicFieldsContainer">
+                    <div id="dynamicFieldsList">
+                        <!-- Dynamic fields will be added here -->
+                    </div>
+                    
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addDynamicField()">
+                        ➕ Add Field
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success" id="submitBtn">
+                    <span id="submitText">💾 Save Record</span>
+                    <div class="loading-spinner hidden" id="submitSpinner"></div>
+                </button>
+                
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                    🔄 Reset Form
+                </button>
+                
+                <a href="{{ url_for('view_table', db_name=db_name, table_name=table_name) }}" class="btn btn-secondary">
+                    🔙 Back to Table
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+    let dynamicFieldCount = 0;
+
+    // Add dynamic field functionality
+    function addDynamicField() {
+        dynamicFieldCount++;
+        const container = document.getElementById('dynamicFieldsList');
+        
+        const fieldRow = document.createElement('div');
+        fieldRow.className = 'dynamic-field-row';
+        fieldRow.id = `dynamicField_${dynamicFieldCount}`;
+        
+        fieldRow.innerHTML = `
+            <div>
+                <label class="field-label">Field Name</label>
+                <input type="text" 
+                       name="field_names[]" 
+                       class="form-input" 
+                       placeholder="Enter field name"
+                       required>
+            </div>
+            <div>
+                <label class="field-label">Field Value</label>
+                <input type="text" 
+                       name="field_values[]" 
+                       class="form-input" 
+                       placeholder="Enter field value"
+                       required>
+            </div>
+            <div>
+                <button type="button" 
+                        class="btn btn-danger btn-small" 
+                        onclick="removeDynamicField('dynamicField_${dynamicFieldCount}')"
+                        title="Remove field">
+                    🗑️
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(fieldRow);
+        updateDynamicFieldCounter();
+        
+        // Focus on the field name input
+        const nameInput = fieldRow.querySelector('input[name="field_names[]"]');
+        if (nameInput) {
+            nameInput.focus();
+        }
+    }
+
+    function removeDynamicField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.remove();
+            updateDynamicFieldCounter();
+        }
+    }
+
+    function updateDynamicFieldCounter() {
+        const fields = document.querySelectorAll('.dynamic-field-row').length;
+        const counter = document.getElementById('dynamicFieldCounter');
+        if (counter) {
+            counter.textContent = `${fields} field${fields !== 1 ? 's' : ''}`;
+        }
+    }
+
+    function resetForm() {
+        if (confirm('Are you sure you want to reset the form? All entered data will be lost.')) {
+            document.getElementById('addRecordForm').reset();
+            
+            // Clear dynamic fields
+            const dynamicContainer = document.getElementById('dynamicFieldsList');
+            if (dynamicContainer) {
+                dynamicContainer.innerHTML = '';
+            }
+            dynamicFieldCount = 0;
+            updateDynamicFieldCounter();
+        }
+    }
+
+    // Form submission handling
+    document.getElementById('addRecordForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        const submitSpinner = document.getElementById('submitSpinner');
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitText.textContent = 'Saving...';
+        submitSpinner.classList.remove('hidden');
+        
+        // Validate form
+        const hasSchemaFields = {{ 'true' if fields else 'false' }};
+        const dynamicFields = document.querySelectorAll('.dynamic-field-row').length;
+        
+        if (!hasSchemaFields && dynamicFields === 0) {
+            e.preventDefault();
+            alert('Please add at least one field to save the record.');
+            
+            // Reset button state
+            submitBtn.disabled = false;
+            submitText.textContent = '💾 Save Record';
+            submitSpinner.classList.add('hidden');
+            return;
+        }
+        
+        // Validate dynamic fields
+        const fieldNames = document.querySelectorAll('input[name="field_names[]"]');
+        const fieldValues = document.querySelectorAll('input[name="field_values[]"]');
+        
+        for (let i = 0; i < fieldNames.length; i++) {
+            if (!fieldNames[i].value.trim() || !fieldValues[i].value.trim()) {
+                e.preventDefault();
+                alert('Please fill in both field name and value for all dynamic fields, or remove empty fields.');
+                
+                // Reset button state
+                submitBtn.disabled = false;
+                submitText.textContent = '💾 Save Record';
+                submitSpinner.classList.add('hidden');
+                return;
+            }
+        }
+        
+        // Check for duplicate field names
+        const names = Array.from(fieldNames).map(input => input.value.trim().toLowerCase());
+        const schemaFieldNames = [{% if fields %}{% for field_name in fields.keys() %}'{{ field_name.lower() }}',{% endfor %}{% endif %}];
+        
+        // Check for duplicates within dynamic fields
+        const duplicateDynamic = names.filter((name, index) => names.indexOf(name) !== index);
+        if (duplicateDynamic.length > 0) {
+            e.preventDefault();
+            alert(`Duplicate field names found: ${duplicateDynamic.join(', ')}. Please use unique field names.`);
+            
+            // Reset button state
+            submitBtn.disabled = false;
+            submitText.textContent = '💾 Save Record';
+            submitSpinner.classList.add('hidden');
+            return;
+        }
+        
+        // Check for conflicts with schema fields
+        const conflictingFields = names.filter(name => schemaFieldNames.includes(name));
+        if (conflictingFields.length > 0) {
+            e.preventDefault();
+            alert(`Dynamic field names conflict with schema fields: ${conflictingFields.join(', ')}. Please use different names.`);
+            
+            // Reset button state
+            submitBtn.disabled = false;
+            submitText.textContent = '💾 Save Record';
+            submitSpinner.classList.add('hidden');
+            return;
+        }
+    });
+
+    // Auto-save functionality (optional)
+    let autoSaveTimeout;
+    
+    function setupAutoSave() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                clearTimeout(autoSaveTimeout);
+                autoSaveTimeout = setTimeout(saveFormData, 1000);
+            });
+        });
+    }
+    
+    function saveFormData() {
+        const formData = new FormData(document.getElementById('addRecordForm'));
+        const data = {};
+        for (let [key, value] of formData.entries()) {
+            if (data[key]) {
+                if (Array.isArray(data[key])) {
+                    data[key].push(value);
+                } else {
+                    data[key] = [data[key], value];
+                }
+            } else {
+                data[key] = value;
+            }
+        }
+        localStorage.setItem('addRecordFormData_{{ db_name }}_{{ table_name }}', JSON.stringify(data));
+    }
+    
+    function loadFormData() {
+        const savedData = localStorage.getItem('addRecordFormData_{{ db_name }}_{{ table_name }}');
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                
+                // Only restore if user confirms
+                if (confirm('Found previously entered data. Would you like to restore it?')) {
+                    for (let [key, value] of Object.entries(data)) {
+                        if (key === 'field_names[]' || key === 'field_values[]') {
+                            // Handle dynamic fields specially
+                            continue;
+                        }
+                        
+                        const input = document.querySelector(`[name="${key}"]`);
+                        if (input) {
+                            input.value = Array.isArray(value) ? value[0] : value;
+                        }
+                    }
+                } else {
+                    localStorage.removeItem('addRecordFormData_{{ db_name }}_{{ table_name }}');
+                }
+            } catch (e) {
+                console.error('Error loading saved form data:', e);
+            }
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateDynamicFieldCounter();
+        setupAutoSave();
+        loadFormData();
+        
+        // Clear saved data on successful submission
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            localStorage.removeItem('addRecordFormData_{{ db_name }}_{{ table_name }}');
+        }
+    });
+    
+    // Clear saved data when leaving page (if form is empty)
+    window.addEventListener('beforeunload', function() {
+        const form = document.getElementById('addRecordForm');
+        const formData = new FormData(form);
+        let hasData = false;
+        
+        for (let [key, value] of formData.entries()) {
+            if (value.trim()) {
+                hasData = true;
+                break;
+            }
+        }
+        
+        if (!hasData) {
+            localStorage.removeItem('addRecordFormData_{{ db_name }}_{{ table_name }}');
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + S to save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('addRecordForm').submit();
+        }
+        
+        // Ctrl/Cmd + R to reset (with confirmation)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            e.preventDefault();
+            resetForm();
+        }
+        
+        // Escape to go back
+        if (e.key === 'Escape') {
+            if (confirm('Are you sure you want to go back? Any unsaved changes will be lost.')) {
+                window.location.href = "{{ url_for('view_table', db_name=db_name, table_name=table_name) }}";
+            }
+        }
+    });
+</script>
+
 {% endblock %}
