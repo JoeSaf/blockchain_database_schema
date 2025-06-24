@@ -1,25 +1,369 @@
-# db_gui.py - Updated with Enhanced Dashboard Integration
+# db_gui.py - Complete Enhanced Version with Integrated Security Dashboard
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import os
 import json
 import time
 import csv
 import io
-from datetime import datetime
+import glob
+import hashlib
+import threading
+import weakref
+import shutil
+from collections import defaultdict
+from datetime import datetime, timedelta
 from blockchain_databases import DatabaseStorage, DatabaseManager
 from polymorphicblock import AuthSystem
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # For session management
+app.secret_key = os.urandom(24)
 
 # Initialize authentication and database systems
 auth_system = AuthSystem()
 db_storage = DatabaseStorage()
 db_manager = DatabaseManager(auth_system)
-
-# Get the blockchain instance from auth_system
 blockchain = auth_system.blockchain
 
+# Security tracking and configuration
+security_violations = []
+quarantined_blocks = []
+security_config = {
+    'enable_auto_reorder': False,
+    'trigger_threshold': 5,
+    'randomness_factor': 0.7,
+    'scan_interval': 3600,
+    'auto_quarantine': False,
+    'system_start_time': time.time(),
+    'reorder_count': 0,
+    'data_recovery_count': 0,
+    'last_security_scan': None
+}
+
+# ==================== SECURITY ANALYZER CLASS ====================
+class SecurityAnalyzer:
+    def __init__(self, blockchain):
+        self.blockchain = blockchain
+        self.violation_history = []
+        self.quarantined_blocks = []
+        self.security_events = []
+        self.load_security_data()
+    
+    def load_security_data(self):
+        """Load existing security data from files"""
+        try:
+            # Load quarantined blocks
+            quarantine_file = 'quarantined_blocks.json'
+            if os.path.exists(quarantine_file):
+                with open(quarantine_file, 'r') as f:
+                    self.quarantined_blocks = json.load(f)
+            
+            # Load security timeline
+            timeline_file = 'security_timeline.json'
+            if os.path.exists(timeline_file):
+                with open(timeline_file, 'r') as f:
+                    self.security_events = json.load(f)
+        except Exception as e:
+            print(f"Error loading security data: {e}")
+    
+    def comprehensive_security_scan(self):
+        """Perform comprehensive security analysis"""
+        violations = []
+        current_time = time.time()
+        
+        # Analyze each block for various security issues
+        for i, block in enumerate(self.blockchain.chain):
+            try:
+                # 1. Hash Integrity Check
+                if hasattr(block, 'hash') and hasattr(block, 'calculate_hash'):
+                    calculated_hash = block.calculate_hash()
+                    if block.hash != calculated_hash:
+                        violations.append({
+                            'block_id': getattr(block, 'index', i),
+                            'violation_type': 'HASH_MISMATCH',
+                            'severity': 'CRITICAL',
+                            'timestamp': current_time,
+                            'description': f'Block hash validation failed',
+                            'stored_hash': block.hash,
+                            'calculated_hash': calculated_hash,
+                            'affected_data': str(block.data)[:100] + '...' if len(str(block.data)) > 100 else str(block.data)
+                        })
+                
+                # 2. Chain Continuity Check
+                if i > 0:
+                    previous_block = self.blockchain.chain[i-1]
+                    if (hasattr(block, 'previous_hash') and hasattr(previous_block, 'hash') and
+                        block.previous_hash != previous_block.hash):
+                        violations.append({
+                            'block_id': getattr(block, 'index', i),
+                            'violation_type': 'CHAIN_BREAK',
+                            'severity': 'CRITICAL',
+                            'timestamp': current_time,
+                            'description': f'Chain integrity violation between blocks {i-1} and {i}',
+                            'expected_hash': previous_block.hash,
+                            'actual_hash': block.previous_hash
+                        })
+                
+                # 3. Data Structure Validation
+                if hasattr(block, 'data'):
+                    if not isinstance(block.data, dict):
+                        violations.append({
+                            'block_id': getattr(block, 'index', i),
+                            'violation_type': 'DATA_STRUCTURE_INVALID',
+                            'severity': 'HIGH',
+                            'timestamp': current_time,
+                            'description': 'Block data is not a valid dictionary structure'
+                        })
+                    elif not block.data.get('action'):
+                        violations.append({
+                            'block_id': getattr(block, 'index', i),
+                            'violation_type': 'MISSING_ACTION',
+                            'severity': 'MEDIUM',
+                            'timestamp': current_time,
+                            'description': 'Block missing required action field'
+                        })
+                
+                # 4. Timestamp Validation
+                if i > 0 and hasattr(block, 'timestamp') and hasattr(previous_block, 'timestamp'):
+                    if block.timestamp < previous_block.timestamp:
+                        violations.append({
+                            'block_id': getattr(block, 'index', i),
+                            'violation_type': 'TIMESTAMP_VIOLATION',
+                            'severity': 'HIGH',
+                            'timestamp': current_time,
+                            'description': 'Block timestamp is earlier than previous block'
+                        })
+                
+                # 5. Authentication Pattern Analysis
+                if hasattr(block, 'data') and isinstance(block.data, dict):
+                    if block.data.get('action') == 'authenticate':
+                        # Check for rapid authentication attempts (potential brute force)
+                        recent_auths = self._count_recent_authentications(block.data.get('username', ''), current_time)
+                        if recent_auths > 10:  # More than 10 auth attempts in recent period
+                            violations.append({
+                                'block_id': getattr(block, 'index', i),
+                                'violation_type': 'SUSPICIOUS_AUTH_PATTERN',
+                                'severity': 'HIGH',
+                                'timestamp': current_time,
+                                'description': f'Suspicious authentication pattern detected for user {block.data.get("username", "unknown")}'
+                            })
+                
+                # 6. Database Operation Security Check
+                if hasattr(block, 'data') and isinstance(block.data, dict):
+                    if block.data.get('action') in ['create_database', 'store_item']:
+                        # Check for unauthorized database operations
+                        if not self._validate_database_permission(block.data):
+                            violations.append({
+                                'block_id': getattr(block, 'index', i),
+                                'violation_type': 'UNAUTHORIZED_DB_OPERATION',
+                                'severity': 'HIGH',
+                                'timestamp': current_time,
+                                'description': f'Potentially unauthorized database operation by {block.data.get("username", "unknown")}'
+                            })
+                
+            except Exception as e:
+                violations.append({
+                    'block_id': getattr(block, 'index', i),
+                    'violation_type': 'ANALYSIS_ERROR',
+                    'severity': 'MEDIUM',
+                    'timestamp': current_time,
+                    'description': f'Error analyzing block: {str(e)}'
+                })
+        
+        # Store violation history
+        self.violation_history.extend(violations)
+        
+        return {
+            'violations': violations,
+            'scan_timestamp': current_time,
+            'blocks_analyzed': len(self.blockchain.chain),
+            'total_violations': len(violations)
+        }
+    
+    def _count_recent_authentications(self, username, current_time, window_seconds=300):
+        """Count authentication attempts for a user in recent time window"""
+        count = 0
+        for block in self.blockchain.chain:
+            if (hasattr(block, 'data') and isinstance(block.data, dict) and
+                block.data.get('action') == 'authenticate' and
+                block.data.get('username') == username and
+                hasattr(block, 'timestamp') and
+                current_time - block.timestamp <= window_seconds):
+                count += 1
+        return count
+    
+    def _validate_database_permission(self, block_data):
+        """Validate if database operation is authorized"""
+        # Simple validation - you can enhance this based on your permission model
+        username = block_data.get('username', '')
+        action = block_data.get('action', '')
+        
+        # Check if user exists in the system
+        for block in self.blockchain.chain:
+            if (hasattr(block, 'data') and isinstance(block.data, dict) and
+                block.data.get('action') == 'register' and
+                block.data.get('username') == username):
+                user_role = block.data.get('role', 'user')
+                # Only admins can create databases
+                if action == 'create_database' and user_role != 'admin':
+                    return False
+                return True
+        
+        return False  # User not found
+    
+    def quarantine_block(self, block_id, reason="Security violation detected"):
+        """Quarantine a specific block"""
+        try:
+            # Find the block
+            target_block = None
+            for block in self.blockchain.chain:
+                if getattr(block, 'index', None) == block_id:
+                    target_block = block
+                    break
+            
+            if not target_block:
+                return False
+            
+            # Create quarantine record
+            quarantine_record = {
+                'block_id': block_id,
+                'quarantine_timestamp': time.time(),
+                'reason': reason,
+                'block_data': target_block.to_dict() if hasattr(target_block, 'to_dict') else str(target_block),
+                'quarantined_by': 'system'
+            }
+            
+            self.quarantined_blocks.append(quarantine_record)
+            
+            # Save quarantine data
+            with open('quarantined_blocks.json', 'w') as f:
+                json.dump(self.quarantined_blocks, f, indent=2)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error quarantining block {block_id}: {e}")
+            return False
+    
+    def restore_block(self, block_id):
+        """Restore a quarantined block"""
+        try:
+            # Find and remove from quarantine
+            for i, record in enumerate(self.quarantined_blocks):
+                if record['block_id'] == block_id:
+                    restored_record = self.quarantined_blocks.pop(i)
+                    
+                    # Save updated quarantine data
+                    with open('quarantined_blocks.json', 'w') as f:
+                        json.dump(self.quarantined_blocks, f, indent=2)
+                    
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"Error restoring block {block_id}: {e}")
+            return False
+
+# ==================== SECURITY MONITOR CLASS ====================
+class SecurityMonitor:
+    def __init__(self, blockchain, security_analyzer):
+        self.blockchain = blockchain
+        self.security_analyzer = security_analyzer
+        self.monitoring = False
+        self.monitor_thread = None
+        self.violation_threshold = 5
+        self.auto_remediation_enabled = False
+    
+    def start_monitoring(self):
+        """Start continuous security monitoring"""
+        if not self.monitoring:
+            self.monitoring = True
+            self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+            self.monitor_thread.start()
+            print("🛡️ Security monitoring started")
+    
+    def stop_monitoring(self):
+        """Stop security monitoring"""
+        self.monitoring = False
+        if self.monitor_thread and self.monitor_thread.is_alive():
+            self.monitor_thread.join(timeout=5)
+        print("🛡️ Security monitoring stopped")
+    
+    def _monitor_loop(self):
+        """Continuous monitoring loop"""
+        while self.monitoring:
+            try:
+                # Perform security scan
+                scan_results = self.security_analyzer.comprehensive_security_scan()
+                
+                # Check if violations exceed threshold
+                if len(scan_results['violations']) >= self.violation_threshold:
+                    self._handle_security_breach(scan_results)
+                
+                # Wait before next scan
+                time.sleep(30)  # Scan every 30 seconds
+                
+            except Exception as e:
+                print(f"Error in security monitoring: {e}")
+                time.sleep(60)  # Wait longer on error
+    
+    def _handle_security_breach(self, scan_results):
+        """Handle detected security breach"""
+        print(f"🚨 SECURITY BREACH DETECTED: {len(scan_results['violations'])} violations found")
+        
+        # Log security event
+        log_security_event('security_breach', 'detected', {
+            'violation_count': len(scan_results['violations']),
+            'auto_remediation': self.auto_remediation_enabled
+        })
+        
+        if self.auto_remediation_enabled:
+            self._perform_auto_remediation(scan_results)
+    
+    def _perform_auto_remediation(self, scan_results):
+        """Perform automatic remediation"""
+        try:
+            # Quarantine critical violations
+            critical_violations = [v for v in scan_results['violations'] if v['severity'] == 'CRITICAL']
+            
+            for violation in critical_violations:
+                self.security_analyzer.quarantine_block(
+                    violation['block_id'], 
+                    f"Auto-quarantine: {violation['violation_type']}"
+                )
+            
+            # Trigger chain validation and repair
+            if len(critical_violations) > 0:
+                self.blockchain.is_chain_valid()  # This will trigger fallback response
+            
+            print(f"🛠️ Auto-remediation completed: {len(critical_violations)} blocks quarantined")
+            
+        except Exception as e:
+            print(f"Error in auto-remediation: {e}")
+
+# Initialize global security components
+security_analyzer = None
+security_monitor = None
+
+def initialize_security_system():
+    """Initialize the security system components"""
+    global security_analyzer, security_monitor
+    
+    try:
+        security_analyzer = SecurityAnalyzer(blockchain)
+        security_monitor = SecurityMonitor(blockchain, security_analyzer)
+        
+        # Start monitoring if auto-remediation is enabled
+        if security_config.get('enable_auto_reorder', False):
+            security_monitor.auto_remediation_enabled = True
+            security_monitor.start_monitoring()
+        
+        print("🛡️ Security system initialized successfully")
+        
+    except Exception as e:
+        print(f"❌ Failed to initialize security system: {e}")
+
+# ==================== CORE WEBAPP ROUTES ====================
 @app.route("/")
 def home():
     """Homepage - lists available databases or redirects to login"""
@@ -43,8 +387,21 @@ def login():
             session['username'] = username
             session['role'] = role
             flash(f"Welcome, {username}!")
+            
+            # Log successful authentication
+            log_security_event('authentication', 'success', {
+                'username': username,
+                'role': role,
+                'ip_address': request.remote_addr
+            })
+            
             return redirect(url_for('home'))
         else:
+            # Log failed authentication
+            log_security_event('authentication', 'failed', {
+                'attempted_username': username,
+                'ip_address': request.remote_addr
+            })
             flash("Authentication failed. Please check your credentials.")
     
     return render_template("login.html")
@@ -52,12 +409,19 @@ def login():
 @app.route("/logout")
 def logout():
     """Log out user"""
+    username = session.get('username')
+    
+    # Log logout
+    if username:
+        log_security_event('logout', 'success', {
+            'username': username,
+            'ip_address': request.remote_addr
+        })
+    
     session.pop('username', None)
     session.pop('role', None)
     flash("You have been logged out.")
     return redirect(url_for('login'))
-
-# ==================== ENHANCED DASHBOARD ROUTES ====================
 
 @app.route("/blockchain")
 def blockchain_dashboard():
@@ -66,7 +430,509 @@ def blockchain_dashboard():
         return redirect(url_for('login'))
     return render_template("blockchain_dashboard.html")
 
-# ==================== ENHANCED API ENDPOINTS ====================
+@app.route("/security-dashboard")
+def security_dashboard():
+    """Main security dashboard"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Only admin users can access security dashboard
+    if session.get('role') != 'admin':
+        flash("Access denied. Admin privileges required.")
+        return redirect(url_for('home'))
+    
+    return render_template("security_violations.html")
+
+# ==================== ENHANCED SECURITY API ENDPOINTS ====================
+
+@app.route("/api/security/status", methods=["GET"])
+def get_security_status():
+    """Get comprehensive security status"""
+    try:
+        global security_analyzer
+        
+        if not security_analyzer:
+            initialize_security_system()
+        
+        # Perform real-time security analysis
+        violations = analyze_security_violations()
+        quarantine_data = get_quarantine_data()
+        metrics = calculate_security_metrics()
+        
+        # Assess threat level
+        threat_level = assess_threat_level(violations, quarantine_data)
+        
+        # Calculate system status
+        system_status = 'healthy'
+        if len([v for v in violations if v['severity'] == 'CRITICAL']) > 0:
+            system_status = 'critical'
+        elif len([v for v in violations if v['severity'] == 'HIGH']) >= 3:
+            system_status = 'warning'
+        elif len(violations) > 0:
+            system_status = 'attention_needed'
+        
+        status = {
+            'total_violations': len(violations),
+            'quarantined_blocks': len(quarantine_data),
+            'integrity_score': metrics.get('integrity_score', 100),
+            'threat_level': threat_level,
+            'system_status': system_status,
+            'last_security_scan': security_config.get('last_security_scan'),
+            'data_recovery_count': security_config.get('data_recovery_count', 0),
+            'auto_remediation_active': security_config.get('enable_auto_reorder', False),
+            'monitoring_status': security_monitor.monitoring if security_monitor else False,
+            'reorder_count': security_config.get('reorder_count', 0),
+            'chain_length': len(blockchain.chain),
+            'scan_interval': security_config.get('scan_interval', 3600),
+            'violation_breakdown': {
+                'critical': len([v for v in violations if v['severity'] == 'CRITICAL']),
+                'high': len([v for v in violations if v['severity'] == 'HIGH']),
+                'medium': len([v for v in violations if v['severity'] == 'MEDIUM']),
+                'low': len([v for v in violations if v['severity'] == 'LOW'])
+            },
+            'last_update': time.time()
+        }
+        
+        return jsonify(status), 200
+        
+    except Exception as e:
+        print(f"Error getting security status: {e}")
+        return jsonify({
+            "error": str(e),
+            "status": "error",
+            "timestamp": time.time()
+        }), 500
+
+@app.route("/api/security/violations", methods=["GET"])
+def get_security_violations():
+    """Get detailed security violations"""
+    try:
+        global security_analyzer
+        
+        if not security_analyzer:
+            initialize_security_system()
+        
+        violations = analyze_security_violations()
+        
+        # Sort violations by severity and timestamp
+        severity_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
+        violations.sort(key=lambda x: (severity_order.get(x['severity'], 4), -x['timestamp']))
+        
+        # Group violations by type for analysis
+        violation_types = defaultdict(int)
+        for violation in violations:
+            violation_types[violation['violation_type']] += 1
+        
+        return jsonify({
+            'violations': violations,
+            'total_count': len(violations),
+            'critical_count': len([v for v in violations if v['severity'] == 'CRITICAL']),
+            'high_count': len([v for v in violations if v['severity'] == 'HIGH']),
+            'medium_count': len([v for v in violations if v['severity'] == 'MEDIUM']),
+            'low_count': len([v for v in violations if v['severity'] == 'LOW']),
+            'violation_types': dict(violation_types),
+            'scan_timestamp': time.time(),
+            'recommendations': generate_security_recommendations(violations)
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting security violations: {e}")
+        return jsonify({
+            "error": str(e),
+            "violations": [],
+            "total_count": 0
+        }), 500
+
+@app.route("/api/security/quarantine", methods=["GET"])
+def get_quarantine_status():
+    """Get quarantined blocks status"""
+    try:
+        global security_analyzer
+        
+        if not security_analyzer:
+            initialize_security_system()
+        
+        quarantine_data = get_quarantine_data()
+        
+        # Add additional metadata to quarantine data
+        enhanced_quarantine_data = []
+        for item in quarantine_data:
+            enhanced_item = item.copy()
+            enhanced_item['quarantine_duration'] = time.time() - item.get('quarantine_timestamp', 0)
+            enhanced_item['can_restore'] = True  # You can add logic for restoration eligibility
+            enhanced_quarantine_data.append(enhanced_item)
+        
+        return jsonify({
+            'infected_blocks': enhanced_quarantine_data,
+            'total_count': len(quarantine_data),
+            'quarantine_summary': {
+                'oldest_quarantine': min([item.get('quarantine_timestamp', time.time()) 
+                                        for item in quarantine_data], default=time.time()),
+                'newest_quarantine': max([item.get('quarantine_timestamp', 0) 
+                                        for item in quarantine_data], default=0),
+                'auto_quarantined': len([item for item in quarantine_data 
+                                       if 'Auto-quarantine' in item.get('reason', '')]),
+                'manual_quarantined': len([item for item in quarantine_data 
+                                         if 'Auto-quarantine' not in item.get('reason', '')])
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting quarantine status: {e}")
+        return jsonify({
+            "error": str(e),
+            "infected_blocks": []
+        }), 500
+
+@app.route("/api/security/timeline", methods=["GET"])
+def get_security_timeline():
+    """Get security event timeline"""
+    try:
+        # Get timeline events from file and recent violations
+        timeline = get_security_timeline()
+        
+        # Add recent security scan results to timeline
+        if security_analyzer:
+            recent_violations = security_analyzer.violation_history[-10:]  # Last 10 violations
+            for violation in recent_violations:
+                timeline.append({
+                    'type': 'violation_detected',
+                    'timestamp': violation['timestamp'],
+                    'title': f"Security Violation: {violation['violation_type']}",
+                    'description': f"Block #{violation['block_id']}: {violation['description']}",
+                    'severity': violation['severity']
+                })
+        
+        # Sort by timestamp (newest first)
+        timeline.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Limit to last 100 events
+        timeline = timeline[:100]
+        
+        return jsonify({
+            'events': timeline,
+            'total_events': len(timeline),
+            'event_types': list(set([event.get('type', 'unknown') for event in timeline])),
+            'last_update': time.time()
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting security timeline: {e}")
+        return jsonify({
+            "error": str(e),
+            "events": []
+        }), 500
+
+@app.route("/api/security/scan", methods=["POST"])
+def trigger_security_scan():
+    """Trigger comprehensive security scan"""
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return jsonify({"error": "Unauthorized - Admin access required"}), 403
+        
+        global security_analyzer
+        
+        if not security_analyzer:
+            initialize_security_system()
+        
+        # Perform comprehensive security scan
+        scan_results = perform_comprehensive_scan()
+        
+        # Update last scan time
+        security_config['last_security_scan'] = time.time()
+        save_security_config()
+        
+        # Log security scan
+        log_security_event('security_scan', 'completed', {
+            'triggered_by': session['username'],
+            'violations_found': len(scan_results.get('violations', [])),
+            'blocks_quarantined': len(scan_results.get('quarantined', [])),
+            'scan_duration': time.time() - scan_results.get('scan_details', {}).get('scan_timestamp', time.time())
+        })
+        
+        return jsonify({
+            'status': 'completed',
+            'results': scan_results,
+            'scan_timestamp': time.time(),
+            'triggered_by': session['username']
+        }), 200
+        
+    except Exception as e:
+        print(f"Error triggering security scan: {e}")
+        return jsonify({
+            "error": str(e),
+            "status": "failed"
+        }), 500
+
+@app.route("/api/security/reorder", methods=["POST"])
+def trigger_chain_reorder():
+    """Trigger blockchain reorder for security"""
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return jsonify({"error": "Unauthorized - Admin access required"}), 403
+        
+        # Get optional parameters
+        request_data = request.get_json() or {}
+        force_reorder = request_data.get('force', False)
+        
+        # Perform chain reorder
+        reorder_results = perform_chain_reorder()
+        
+        # Log reorder action
+        log_security_event('chain_reorder', 'triggered', {
+            'triggered_by': session['username'],
+            'blocks_affected': reorder_results.get('blocks_affected', 0),
+            'randomness_factor': security_config.get('randomness_factor', 0.7),
+            'force_reorder': force_reorder,
+            'original_length': reorder_results.get('original_length', 0),
+            'new_length': reorder_results.get('new_length', 0)
+        })
+        
+        return jsonify({
+            'status': 'completed',
+            'results': reorder_results,
+            'triggered_by': session['username'],
+            'timestamp': time.time()
+        }), 200
+        
+    except Exception as e:
+        print(f"Error triggering chain reorder: {e}")
+        return jsonify({
+            "error": str(e),
+            "status": "failed"
+        }), 500
+
+@app.route("/api/security/quarantine", methods=["POST"])
+def quarantine_infected_blocks():
+    """Quarantine infected blocks"""
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return jsonify({"error": "Unauthorized - Admin access required"}), 403
+        
+        # Get optional parameters
+        request_data = request.get_json() or {}
+        severity_threshold = request_data.get('severity_threshold', 'HIGH')
+        
+        quarantine_results = quarantine_compromised_blocks()
+        
+        log_security_event('quarantine_action', 'completed', {
+            'triggered_by': session['username'],
+            'blocks_quarantined': len(quarantine_results.get('quarantined', [])),
+            'severity_threshold': severity_threshold
+        })
+        
+        return jsonify({
+            'status': 'completed',
+            'results': quarantine_results,
+            'triggered_by': session['username'],
+            'timestamp': time.time()
+        }), 200
+        
+    except Exception as e:
+        print(f"Error quarantining blocks: {e}")
+        return jsonify({
+            "error": str(e),
+            "status": "failed"
+        }), 500
+
+@app.route("/api/security/quarantine/<int:block_id>", methods=["POST"])
+def quarantine_specific_block(block_id):
+    """Quarantine a specific block"""
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return jsonify({"error": "Unauthorized - Admin access required"}), 403
+        
+        global security_analyzer
+        
+        if not security_analyzer:
+            initialize_security_system()
+        
+        request_data = request.get_json() or {}
+        reason = request_data.get('reason', f'Manual quarantine by {session["username"]}')
+        
+        success = security_analyzer.quarantine_block(block_id, reason)
+        
+        if success:
+            log_security_event('manual_quarantine', 'completed', {
+                'block_id': block_id,
+                'reason': reason,
+                'triggered_by': session['username']
+            })
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'Block {block_id} quarantined successfully',
+                'block_id': block_id,
+                'reason': reason
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Block {block_id} not found in quarantine or restoration failed',
+                'block_id': block_id
+            }), 404
+            
+    except Exception as e:
+        print(f"Error restoring block: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/security/config", methods=["GET", "POST"])
+def security_configuration():
+    """Get or update security configuration"""
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return jsonify({"error": "Unauthorized - Admin access required"}), 403
+        
+        global security_monitor
+        
+        if request.method == "POST":
+            config_data = request.get_json()
+            
+            if not config_data:
+                return jsonify({"error": "No configuration data provided"}), 400
+            
+            # Update security configuration
+            old_config = security_config.copy()
+            
+            security_config.update({
+                'enable_auto_reorder': config_data.get('enableAutoReorder', False),
+                'trigger_threshold': max(1, min(100, config_data.get('triggerThreshold', 5))),
+                'randomness_factor': max(0.0, min(1.0, config_data.get('randomnessFactor', 0.7))),
+                'scan_interval': max(60, config_data.get('scanInterval', 3600)),
+                'auto_quarantine': config_data.get('autoQuarantine', False)
+            })
+            
+            # Update monitoring if auto-reorder setting changed
+            if security_monitor:
+                if security_config['enable_auto_reorder'] and not old_config.get('enable_auto_reorder', False):
+                    security_monitor.auto_remediation_enabled = True
+                    security_monitor.start_monitoring()
+                elif not security_config['enable_auto_reorder'] and old_config.get('enable_auto_reorder', False):
+                    security_monitor.auto_remediation_enabled = False
+                    security_monitor.stop_monitoring()
+                
+                security_monitor.violation_threshold = security_config['trigger_threshold']
+            
+            # Save configuration
+            save_security_config()
+            
+            log_security_event('config_update', 'completed', {
+                'updated_by': session['username'],
+                'old_config': old_config,
+                'new_config': security_config
+            })
+            
+            return jsonify({
+                'status': 'updated', 
+                'config': security_config,
+                'monitoring_status': security_monitor.monitoring if security_monitor else False
+            }), 200
+        
+        else:
+            # GET request - return current configuration
+            current_config = security_config.copy()
+            current_config['monitoring_status'] = security_monitor.monitoring if security_monitor else False
+            current_config['system_status'] = 'active' if security_monitor and security_monitor.monitoring else 'inactive'
+            
+            return jsonify({'config': current_config}), 200
+            
+    except Exception as e:
+        print(f"Error managing security configuration: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/security/metrics", methods=["GET"])
+def get_detailed_security_metrics():
+    """Get detailed security metrics and analytics"""
+    try:
+        global security_analyzer
+        
+        if not security_analyzer:
+            initialize_security_system()
+        
+        # Get comprehensive metrics
+        metrics = calculate_security_metrics()
+        
+        # Calculate violation trends
+        violation_trends = calculate_violation_trends()
+        
+        # Risk assessment
+        violations = analyze_security_violations()
+        risk_assessment = assess_security_risks(violations)
+        
+        # Performance metrics
+        performance_metrics = {
+            'average_scan_time': 0,  # You can implement actual timing
+            'last_scan_duration': 0,
+            'scans_performed_today': get_daily_scan_count(),
+            'system_uptime': get_system_uptime_seconds(),
+            'memory_usage': get_memory_usage(),
+            'storage_usage': get_storage_usage()
+        }
+        
+        detailed_metrics = {
+            'current_metrics': metrics,
+            'violation_trends': violation_trends,
+            'risk_assessment': risk_assessment,
+            'performance': performance_metrics,
+            'system_health': {
+                'blockchain_integrity': metrics.get('integrity_score', 0),
+                'monitoring_active': security_monitor.monitoring if security_monitor else False,
+                'auto_remediation': security_config.get('enable_auto_reorder', False),
+                'last_reorder': security_config.get('last_auto_reorder'),
+                'quarantine_capacity': 1000 - len(get_quarantine_data()),  # Assume max 1000
+                'scan_frequency': security_config.get('scan_interval', 3600)
+            },
+            'recommendations': generate_security_recommendations(violations),
+            'alerts': generate_security_alerts(metrics, violations)
+        }
+        
+        return jsonify(detailed_metrics), 200
+        
+    except Exception as e:
+        print(f"Error getting detailed metrics: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/security/monitoring", methods=["POST"])
+def toggle_security_monitoring():
+    """Start or stop security monitoring"""
+    try:
+        if 'username' not in session or session.get('role') != 'admin':
+            return jsonify({"error": "Unauthorized - Admin access required"}), 403
+        
+        global security_monitor
+        
+        if not security_monitor:
+            initialize_security_system()
+        
+        request_data = request.get_json() or {}
+        action = request_data.get('action', 'toggle')  # 'start', 'stop', or 'toggle'
+        
+        if action == 'start' or (action == 'toggle' and not security_monitor.monitoring):
+            security_monitor.start_monitoring()
+            status = 'started'
+        elif action == 'stop' or (action == 'toggle' and security_monitor.monitoring):
+            security_monitor.stop_monitoring()
+            status = 'stopped'
+        else:
+            status = 'no_change'
+        
+        log_security_event('monitoring_toggle', status, {
+            'action': action,
+            'triggered_by': session['username'],
+            'monitoring_status': security_monitor.monitoring
+        })
+        
+        return jsonify({
+            'status': status,
+            'monitoring_active': security_monitor.monitoring,
+            'auto_remediation': security_monitor.auto_remediation_enabled
+        }), 200
+        
+    except Exception as e:
+        print(f"Error toggling monitoring: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# ==================== BLOCKCHAIN API ENDPOINTS ====================
 
 @app.route("/api/chain", methods=["GET"])
 def get_chain():
@@ -108,20 +974,21 @@ def get_status():
         user_count = count_unique_users()
         database_count = count_databases()
         
-        # Get chain health metrics
-        health_metrics = analyze_chain_health()
+        # Get security metrics
+        security_metrics = calculate_security_metrics()
         
         status_data = {
-            "status": "healthy" if is_valid else "corrupted",
+            "status": "healthy" if is_valid and security_metrics['integrity_score'] >= 80 else "compromised",
             "chain_length": len(blockchain.chain),
             "latest_block": latest_block.to_dict() if latest_block else None,
             "unique_users": user_count,
             "total_databases": database_count,
-            "health_metrics": health_metrics,
+            "security_metrics": security_metrics,
             "system_info": {
                 "uptime": get_system_uptime(),
                 "last_backup": get_last_backup_time(),
-                "storage_usage": get_storage_usage()
+                "storage_usage": get_storage_usage(),
+                "last_security_scan": security_config.get('last_security_scan')
             }
         }
         
@@ -130,99 +997,544 @@ def get_status():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/verify", methods=["POST"])
-def verify_blockchain():
-    """Perform comprehensive blockchain verification"""
-    try:
-        verification_results = {
-            "timestamp": time.time(),
-            "overall_status": "unknown",
-            "checks": {}
-        }
-        
-        # Basic chain validity
-        basic_valid = blockchain.is_chain_valid()
-        verification_results["checks"]["basic_validity"] = {
-            "passed": basic_valid,
-            "description": "Basic hash chain validation"
-        }
-        
-        # Check for duplicate blocks
-        duplicate_check = check_duplicate_blocks()
-        verification_results["checks"]["duplicate_blocks"] = duplicate_check
-        
-        # Check timestamp consistency
-        timestamp_check = check_timestamp_consistency()
-        verification_results["checks"]["timestamp_consistency"] = timestamp_check
-        
-        # Check data integrity
-        data_integrity_check = check_data_integrity()
-        verification_results["checks"]["data_integrity"] = data_integrity_check
-        
-        # Determine overall status
-        all_checks_passed = all(
-            check["passed"] for check in verification_results["checks"].values()
-        )
-        verification_results["overall_status"] = "healthy" if all_checks_passed else "issues_detected"
-        
-        return jsonify(verification_results), 200
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+# ==================== ENHANCED SECURITY ANALYSIS FUNCTIONS ====================
 
-@app.route("/api/analytics", methods=["GET"])
-def get_blockchain_analytics():
-    """Get detailed blockchain analytics"""
+def analyze_security_violations():
+    """Enhanced security violation analysis"""
+    global security_analyzer
+    
+    if not security_analyzer:
+        initialize_security_system()
+    
     try:
-        analytics = {
-            "block_types": analyze_block_types(),
-            "user_activity": analyze_user_activity(),
-            "temporal_analysis": analyze_temporal_patterns(),
-            "size_analysis": analyze_chain_size(),
-            "security_metrics": analyze_security_metrics()
-        }
-        
-        return jsonify(analytics), 200
-        
+        scan_results = security_analyzer.comprehensive_security_scan()
+        return scan_results['violations']
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error in security analysis: {e}")
+        return []
 
-@app.route("/api/export", methods=["POST"])
-def export_blockchain():
-    """Export blockchain data in various formats"""
+def get_quarantine_data():
+    """Get quarantined blocks data"""
+    global security_analyzer
+    
+    if not security_analyzer:
+        initialize_security_system()
+    
     try:
-        export_format = request.json.get('format', 'json') if request.json else 'json'
-        include_metadata = request.json.get('include_metadata', True) if request.json else True
+        return security_analyzer.quarantined_blocks
+    except Exception as e:
+        print(f"Error getting quarantine data: {e}")
+        return []
+
+def perform_comprehensive_scan():
+    """Perform comprehensive security scan"""
+    global security_analyzer
+    
+    if not security_analyzer:
+        initialize_security_system()
+    
+    try:
+        scan_results = security_analyzer.comprehensive_security_scan()
         
-        chain_data = blockchain.to_dict()
+        # Additional analysis
+        recommendations = []
+        if len(scan_results['violations']) > 0:
+            recommendations.append("Review and address security violations")
+        if len([v for v in scan_results['violations'] if v['severity'] == 'CRITICAL']) > 0:
+            recommendations.append("Immediate attention required for critical violations")
+        if len(scan_results['violations']) > 10:
+            recommendations.append("Consider enabling auto-remediation")
         
-        if include_metadata:
-            # Add export metadata
-            export_data = {
-                "export_info": {
-                    "timestamp": time.time(),
-                    "format": export_format,
-                    "chain_length": len(chain_data),
-                    "exported_by": session.get('username', 'unknown')
-                },
-                "blockchain": chain_data
+        return {
+            'violations': scan_results['violations'],
+            'quarantined': security_analyzer.quarantined_blocks,
+            'metrics': calculate_security_metrics(),
+            'recommendations': recommendations,
+            'scan_details': {
+                'blocks_analyzed': scan_results['blocks_analyzed'],
+                'scan_timestamp': scan_results['scan_timestamp']
             }
-        else:
-            export_data = chain_data
+        }
         
-        if export_format == 'json':
-            return jsonify(export_data), 200
-        elif export_format == 'csv':
-            # Convert to CSV format
-            csv_data = convert_blockchain_to_csv(chain_data)
-            return csv_data, 200, {'Content-Type': 'text/csv'}
-        else:
-            return jsonify({"error": "Unsupported format"}), 400
-            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Error in comprehensive scan: {e}")
+        return {
+            'violations': [],
+            'quarantined': [],
+            'metrics': {},
+            'recommendations': [f"Error during scan: {str(e)}"]
+        }
 
-# ==================== UTILITY FUNCTIONS FOR DASHBOARD ====================
+def perform_chain_reorder():
+    """Perform blockchain reorder for security"""
+    global security_analyzer
+    
+    try:
+        # Trigger blockchain validation which will perform reordering if needed
+        original_length = len(blockchain.chain)
+        is_valid = blockchain.is_chain_valid()
+        
+        new_length = len(blockchain.chain)
+        blocks_affected = original_length - new_length
+        
+        # Update security configuration
+        security_config['reorder_count'] = security_config.get('reorder_count', 0) + 1
+        security_config['last_auto_reorder'] = time.time()
+        save_security_config()
+        
+        return {
+            'status': 'completed',
+            'blocks_affected': blocks_affected,
+            'original_length': original_length,
+            'new_length': new_length,
+            'reorder_type': 'security_remediation',
+            'timestamp': time.time(),
+            'chain_valid': is_valid
+        }
+        
+    except Exception as e:
+        print(f"Error in chain reorder: {e}")
+        return {
+            'status': 'failed',
+            'error': str(e),
+            'blocks_affected': 0
+        }
+
+def quarantine_compromised_blocks():
+    """Quarantine compromised blocks"""
+    global security_analyzer
+    
+    if not security_analyzer:
+        initialize_security_system()
+    
+    try:
+        violations = security_analyzer.comprehensive_security_scan()['violations']
+        quarantined = []
+        
+        for violation in violations:
+            if violation['severity'] in ['CRITICAL', 'HIGH']:
+                success = security_analyzer.quarantine_block(
+                    violation['block_id'],
+                    f"Bulk quarantine: {violation['violation_type']}"
+                )
+                if success:
+                    quarantined.append(violation['block_id'])
+        
+        return {
+            'quarantined': quarantined,
+            'total_quarantined': len(quarantined),
+            'timestamp': time.time()
+        }
+        
+    except Exception as e:
+        print(f"Error quarantining blocks: {e}")
+        return {
+            'quarantined': [],
+            'total_quarantined': 0,
+            'error': str(e)
+        }
+
+def calculate_security_metrics():
+    """Calculate comprehensive security metrics"""
+    global security_analyzer
+    
+    if not security_analyzer:
+        return {
+            'integrity_score': 100,
+            'total_violations': 0,
+            'critical_violations': 0,
+            'chain_length': len(blockchain.chain)
+        }
+    
+    try:
+        violations = security_analyzer.comprehensive_security_scan()['violations']
+        chain_length = len(blockchain.chain)
+        
+        # Calculate integrity score
+        critical_violations = len([v for v in violations if v['severity'] == 'CRITICAL'])
+        high_violations = len([v for v in violations if v['severity'] == 'HIGH'])
+        
+        integrity_score = 100
+        if chain_length > 0:
+            # Deduct points for violations
+            integrity_score -= (critical_violations * 25)  # 25 points per critical
+            integrity_score -= (high_violations * 15)      # 15 points per high
+            integrity_score = max(0, integrity_score)
+        
+        # Additional metrics
+        auth_blocks = sum(1 for block in blockchain.chain 
+                         if hasattr(block, 'data') and isinstance(block.data, dict) 
+                         and block.data.get('action') == 'authenticate')
+        
+        db_blocks = sum(1 for block in blockchain.chain 
+                       if hasattr(block, 'data') and isinstance(block.data, dict) 
+                       and block.data.get('action') in ['create_database', 'store_item'])
+        
+        return {
+            'integrity_score': integrity_score,
+            'total_violations': len(violations),
+            'critical_violations': critical_violations,
+            'high_violations': high_violations,
+            'medium_violations': len([v for v in violations if v['severity'] == 'MEDIUM']),
+            'low_violations': len([v for v in violations if v['severity'] == 'LOW']),
+            'chain_length': chain_length,
+            'auth_operations': auth_blocks,
+            'database_operations': db_blocks,
+            'quarantined_blocks': len(security_analyzer.quarantined_blocks),
+            'reorder_count': security_config.get('reorder_count', 0),
+            'data_recovery_count': security_config.get('data_recovery_count', 0),
+            'last_scan': security_config.get('last_security_scan'),
+            'monitoring_active': security_monitor.monitoring if security_monitor else False
+        }
+        
+    except Exception as e:
+        print(f"Error calculating security metrics: {e}")
+        return {
+            'integrity_score': 0,
+            'total_violations': 0,
+            'error': str(e)
+        }
+
+def assess_threat_level(violations, quarantined):
+    """Assess current threat level"""
+    critical_count = len([v for v in violations if v['severity'] == 'CRITICAL'])
+    high_count = len([v for v in violations if v['severity'] == 'HIGH'])
+    
+    if critical_count >= 3:
+        return 'CRITICAL'
+    elif critical_count >= 1 or high_count >= 5:
+        return 'HIGH'
+    elif high_count >= 2:
+        return 'MEDIUM'
+    elif len(violations) > 0:
+        return 'LOW'
+    else:
+        return 'NONE'
+
+def get_security_timeline():
+    """Get security event timeline"""
+    timeline_file = 'security_timeline.json'
+    timeline = []
+    
+    if os.path.exists(timeline_file):
+        try:
+            with open(timeline_file, 'r') as f:
+                timeline = json.load(f)
+        except:
+            timeline = []
+    
+    # Add recent violations to timeline
+    violations = analyze_security_violations()
+    for violation in violations[-10:]:  # Last 10 violations
+        timeline.append({
+            'type': 'violation',
+            'timestamp': violation['timestamp'],
+            'title': f"Security Violation Detected",
+            'description': f"{violation['violation_type']} in Block #{violation['block_id']}: {violation['description']}"
+        })
+    
+    # Sort by timestamp (newest first)
+    timeline.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    return timeline[:50]  # Return last 50 events
+
+def log_security_event(event_type, status, details):
+    """Log security events to timeline"""
+    timeline_file = 'security_timeline.json'
+    
+    event = {
+        'type': event_type,
+        'status': status,
+        'timestamp': time.time(),
+        'title': f"{event_type.title().replace('_', ' ')} {status.title()}",
+        'description': f"{event_type.replace('_', ' ').title()} was {status}",
+        'details': details
+    }
+    
+    timeline = []
+    if os.path.exists(timeline_file):
+        try:
+            with open(timeline_file, 'r') as f:
+                timeline = json.load(f)
+        except:
+            timeline = []
+    
+    timeline.append(event)
+    
+    # Keep only last 1000 events
+    timeline = timeline[-1000:]
+    
+    try:
+        with open(timeline_file, 'w') as f:
+            json.dump(timeline, f, indent=2)
+    except Exception as e:
+        print(f"Failed to log security event: {e}")
+
+def save_security_config():
+    """Save security configuration to file"""
+    config_file = 'security_config.json'
+    try:
+        with open(config_file, 'w') as f:
+            json.dump(security_config, f, indent=2)
+    except Exception as e:
+        print(f"Failed to save security config: {e}")
+
+def load_security_config():
+    """Load security configuration from file"""
+    global security_config
+    config_file = 'security_config.json'
+    
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r') as f:
+                loaded_config = json.load(f)
+                security_config.update(loaded_config)
+        except Exception as e:
+            print(f"Failed to load security config: {e}")
+
+def ensure_security_files():
+    """Ensure all security-related files exist with proper structure"""
+    try:
+        # Security configuration file
+        if not os.path.exists('security_config.json'):
+            default_config = {
+                'enable_auto_reorder': False,
+                'trigger_threshold': 5,
+                'randomness_factor': 0.7,
+                'scan_interval': 3600,
+                'auto_quarantine': False,
+                'system_start_time': time.time(),
+                'reorder_count': 0,
+                'data_recovery_count': 0
+            }
+            with open('security_config.json', 'w') as f:
+                json.dump(default_config, f, indent=2)
+            print("📄 Created default security configuration")
+        
+        # Security timeline file
+        if not os.path.exists('security_timeline.json'):
+            with open('security_timeline.json', 'w') as f:
+                json.dump([], f)
+            print("📄 Created security timeline file")
+        
+        # Quarantine file
+        if not os.path.exists('quarantined_blocks.json'):
+            with open('quarantined_blocks.json', 'w') as f:
+                json.dump([], f)
+            print("📄 Created quarantine file")
+        
+        # Create directories
+        os.makedirs('logs', exist_ok=True)
+        os.makedirs('security_reports', exist_ok=True)
+        os.makedirs('backups', exist_ok=True)
+        
+        print("✅ Security file structure verified")
+        
+    except Exception as e:
+        print(f"❌ Error ensuring security files: {e}")
+
+# ==================== HELPER FUNCTIONS FOR SECURITY API ====================
+
+def generate_security_recommendations(violations):
+    """Generate security recommendations based on violations"""
+    recommendations = []
+    
+    if not violations:
+        recommendations.append("System is secure - no violations detected")
+        return recommendations
+    
+    critical_count = len([v for v in violations if v['severity'] == 'CRITICAL'])
+    high_count = len([v for v in violations if v['severity'] == 'HIGH'])
+    
+    if critical_count > 0:
+        recommendations.append(f"Immediate attention required: {critical_count} critical violations detected")
+        recommendations.append("Consider running chain reorder to fix integrity issues")
+    
+    if high_count > 3:
+        recommendations.append(f"Review {high_count} high-severity violations")
+        recommendations.append("Enable automatic remediation for faster response")
+    
+    if len(violations) > 10:
+        recommendations.append("High violation count detected - review security policies")
+    
+    # Check violation types
+    violation_types = [v['violation_type'] for v in violations]
+    if 'HASH_MISMATCH' in violation_types:
+        recommendations.append("Hash mismatches detected - verify data integrity")
+    if 'CHAIN_BREAK' in violation_types:
+        recommendations.append("Chain continuity issues found - immediate repair needed")
+    if 'SUSPICIOUS_AUTH_PATTERN' in violation_types:
+        recommendations.append("Suspicious authentication patterns - review user access")
+    
+    return recommendations
+
+def generate_security_alerts(metrics, violations):
+    """Generate security alerts based on current state"""
+    alerts = []
+    
+    integrity_score = metrics.get('integrity_score', 100)
+    if integrity_score < 50:
+        alerts.append({
+            'level': 'critical',
+            'message': f'System integrity critically low: {integrity_score}%',
+            'action': 'immediate_attention'
+        })
+    elif integrity_score < 80:
+        alerts.append({
+            'level': 'warning',
+            'message': f'System integrity below optimal: {integrity_score}%',
+            'action': 'review_required'
+        })
+    
+    critical_violations = len([v for v in violations if v['severity'] == 'CRITICAL'])
+    if critical_violations > 0:
+        alerts.append({
+            'level': 'critical',
+            'message': f'{critical_violations} critical security violations active',
+            'action': 'immediate_remediation'
+        })
+    
+    quarantined_count = metrics.get('quarantined_blocks', 0)
+    if quarantined_count > 10:
+        alerts.append({
+            'level': 'warning',
+            'message': f'{quarantined_count} blocks in quarantine',
+            'action': 'review_quarantine'
+        })
+    
+    return alerts
+
+def calculate_violation_trends():
+    """Calculate violation trends over time"""
+    try:
+        # Get violations from the last 24 hours, 7 days, 30 days
+        current_time = time.time()
+        day_ago = current_time - 86400
+        week_ago = current_time - 604800
+        month_ago = current_time - 2592000
+        
+        recent_violations = []
+        if security_analyzer:
+            recent_violations = security_analyzer.violation_history
+        
+        # Count violations by time period
+        daily_count = len([v for v in recent_violations if v['timestamp'] >= day_ago])
+        weekly_count = len([v for v in recent_violations if v['timestamp'] >= week_ago])
+        monthly_count = len([v for v in recent_violations if v['timestamp'] >= month_ago])
+        
+        # Violation types trend
+        violation_types_trend = defaultdict(int)
+        for violation in recent_violations:
+            if violation['timestamp'] >= week_ago:
+                violation_types_trend[violation['violation_type']] += 1
+        
+        return {
+            'daily_violations': daily_count,
+            'weekly_violations': weekly_count,
+            'monthly_violations': monthly_count,
+            'violation_types_trend': dict(violation_types_trend),
+            'severity_distribution': {
+                'CRITICAL': len([v for v in recent_violations if v['severity'] == 'CRITICAL' and v['timestamp'] >= week_ago]),
+                'HIGH': len([v for v in recent_violations if v['severity'] == 'HIGH' and v['timestamp'] >= week_ago]),
+                'MEDIUM': len([v for v in recent_violations if v['severity'] == 'MEDIUM' and v['timestamp'] >= week_ago]),
+                'LOW': len([v for v in recent_violations if v['severity'] == 'LOW' and v['timestamp'] >= week_ago])
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error calculating violation trends: {e}")
+        return {
+            'daily_violations': 0,
+            'weekly_violations': 0,
+            'monthly_violations': 0,
+            'violation_types_trend': {},
+            'severity_distribution': {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0}
+        }
+
+def assess_security_risks(violations):
+    """Assess current security risks"""
+    risks = {
+        'data_integrity': 'LOW',
+        'chain_continuity': 'LOW',
+        'unauthorized_access': 'LOW',
+        'system_availability': 'LOW',
+        'overall_risk': 'LOW'
+    }
+    
+    try:
+        for violation in violations:
+            # Assess data integrity risk
+            if violation['violation_type'] in ['HASH_MISMATCH', 'DATA_STRUCTURE_INVALID', 'DATA_CORRUPTION']:
+                if violation['severity'] == 'CRITICAL':
+                    risks['data_integrity'] = 'CRITICAL'
+                elif violation['severity'] == 'HIGH' and risks['data_integrity'] != 'CRITICAL':
+                    risks['data_integrity'] = 'HIGH'
+                elif risks['data_integrity'] == 'LOW':
+                    risks['data_integrity'] = 'MEDIUM'
+            
+            # Assess chain continuity risk
+            if violation['violation_type'] in ['CHAIN_BREAK', 'TIMESTAMP_VIOLATION']:
+                if violation['severity'] == 'CRITICAL':
+                    risks['chain_continuity'] = 'CRITICAL'
+                elif violation['severity'] == 'HIGH' and risks['chain_continuity'] != 'CRITICAL':
+                    risks['chain_continuity'] = 'HIGH'
+            
+            # Assess unauthorized access risk
+            if violation['violation_type'] in ['SUSPICIOUS_AUTH_PATTERN', 'UNAUTHORIZED_DB_OPERATION']:
+                if violation['severity'] in ['CRITICAL', 'HIGH']:
+                    risks['unauthorized_access'] = 'HIGH'
+                elif risks['unauthorized_access'] == 'LOW':
+                    risks['unauthorized_access'] = 'MEDIUM'
+        
+        # Calculate overall risk
+        risk_levels = list(risks.values())
+        if 'CRITICAL' in risk_levels:
+            risks['overall_risk'] = 'CRITICAL'
+        elif 'HIGH' in risk_levels:
+            risks['overall_risk'] = 'HIGH'
+        elif 'MEDIUM' in risk_levels:
+            risks['overall_risk'] = 'MEDIUM'
+        
+        return risks
+        
+    except Exception as e:
+        print(f"Error assessing security risks: {e}")
+        return risks
+
+def get_daily_scan_count():
+    """Get number of scans performed today"""
+    try:
+        timeline_file = 'security_timeline.json'
+        if os.path.exists(timeline_file):
+            with open(timeline_file, 'r') as f:
+                events = json.load(f)
+                
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+            scan_count = len([e for e in events 
+                            if e.get('type') == 'security_scan' and e.get('timestamp', 0) >= today_start])
+            return scan_count
+        
+        return 0
+    except:
+        return 0
+
+def get_system_uptime_seconds():
+    """Get system uptime in seconds"""
+    return time.time() - security_config.get('system_start_time', time.time())
+
+def get_memory_usage():
+    """Get current memory usage"""
+    try:
+        import psutil
+        return {
+            'percent': psutil.virtual_memory().percent,
+            'available': psutil.virtual_memory().available,
+            'total': psutil.virtual_memory().total
+        }
+    except ImportError:
+        return {'percent': 0, 'available': 0, 'total': 0, 'note': 'psutil not available'}
+
+# ==================== EXISTING UTILITY FUNCTIONS ====================
 
 def format_time_ago(dt):
     """Format datetime as human-readable time ago"""
@@ -256,218 +1568,29 @@ def count_databases():
             count += 1
     return count
 
-def analyze_chain_health():
-    """Analyze blockchain health metrics"""
-    metrics = {
-        "hash_consistency": True,
-        "timestamp_order": True,
-        "data_integrity": True,
-        "chain_continuity": True
-    }
-    
-    # Check hash consistency
-    for i in range(1, len(blockchain.chain)):
-        current = blockchain.chain[i]
-        previous = blockchain.chain[i-1]
-        
-        if hasattr(current, 'previous_hash') and hasattr(previous, 'hash'):
-            if current.previous_hash != previous.hash:
-                metrics["chain_continuity"] = False
-        
-        if hasattr(current, 'hash') and hasattr(current, 'calculate_hash'):
-            if current.hash != current.calculate_hash():
-                metrics["hash_consistency"] = False
-        
-        if hasattr(current, 'timestamp') and hasattr(previous, 'timestamp'):
-            if current.timestamp < previous.timestamp:
-                metrics["timestamp_order"] = False
-    
-    return metrics
-
-def check_duplicate_blocks():
-    """Check for duplicate blocks in the chain"""
-    seen_hashes = set()
-    duplicates = []
-    
-    for block in blockchain.chain:
-        if hasattr(block, 'hash'):
-            if block.hash in seen_hashes:
-                duplicates.append(block.index if hasattr(block, 'index') else 'unknown')
-            seen_hashes.add(block.hash)
-    
-    return {
-        "passed": len(duplicates) == 0,
-        "description": f"Check for duplicate blocks",
-        "duplicates_found": duplicates
-    }
-
-def check_timestamp_consistency():
-    """Check timestamp consistency across the chain"""
-    inconsistencies = []
-    
-    for i in range(1, len(blockchain.chain)):
-        current = blockchain.chain[i]
-        previous = blockchain.chain[i-1]
-        
-        if (hasattr(current, 'timestamp') and hasattr(previous, 'timestamp') and 
-            current.timestamp < previous.timestamp):
-            inconsistencies.append({
-                "block_index": current.index if hasattr(current, 'index') else i,
-                "issue": "Timestamp earlier than previous block"
-            })
-    
-    return {
-        "passed": len(inconsistencies) == 0,
-        "description": "Check timestamp ordering",
-        "inconsistencies": inconsistencies
-    }
-
-def check_data_integrity():
-    """Check data integrity in blocks"""
-    issues = []
-    
-    for block in blockchain.chain:
-        if not hasattr(block, 'data') or not isinstance(block.data, dict):
-            issues.append({
-                "block_index": block.index if hasattr(block, 'index') else 'unknown',
-                "issue": "Invalid data format"
-            })
-        elif not block.data.get('action'):
-            issues.append({
-                "block_index": block.index if hasattr(block, 'index') else 'unknown',
-                "issue": "Missing action field"
-            })
-    
-    return {
-        "passed": len(issues) == 0,
-        "description": "Check data structure integrity",
-        "issues": issues
-    }
-
-def analyze_block_types():
-    """Analyze distribution of block types"""
-    types = {}
-    for block in blockchain.chain:
-        if hasattr(block, 'data'):
-            action = block.data.get('action', 'unknown')
-            types[action] = types.get(action, 0) + 1
-    return types
-
-def analyze_user_activity():
-    """Analyze user activity patterns"""
-    activity = {}
-    for block in blockchain.chain:
-        if hasattr(block, 'data'):
-            username = block.data.get('username')
-            if username:
-                if username not in activity:
-                    activity[username] = {
-                        "total_actions": 0,
-                        "actions": {},
-                        "first_seen": block.timestamp if hasattr(block, 'timestamp') else 0,
-                        "last_seen": block.timestamp if hasattr(block, 'timestamp') else 0
-                    }
-                
-                activity[username]["total_actions"] += 1
-                if hasattr(block, 'timestamp'):
-                    activity[username]["last_seen"] = max(activity[username]["last_seen"], block.timestamp)
-                
-                action = block.data.get('action', 'unknown')
-                activity[username]["actions"][action] = activity[username]["actions"].get(action, 0) + 1
-    
-    return activity
-
-def analyze_temporal_patterns():
-    """Analyze temporal patterns in the blockchain"""
-    if len(blockchain.chain) < 2:
-        return {"average_block_time": 0, "block_frequency": []}
-    
-    intervals = []
-    for i in range(1, len(blockchain.chain)):
-        if (hasattr(blockchain.chain[i], 'timestamp') and 
-            hasattr(blockchain.chain[i-1], 'timestamp')):
-            interval = blockchain.chain[i].timestamp - blockchain.chain[i-1].timestamp
-            intervals.append(interval)
-    
-    avg_interval = sum(intervals) / len(intervals) if intervals else 0
-    
-    first_timestamp = blockchain.chain[0].timestamp if hasattr(blockchain.chain[0], 'timestamp') else 0
-    last_timestamp = blockchain.chain[-1].timestamp if hasattr(blockchain.chain[-1], 'timestamp') else 0
-    
-    return {
-        "average_block_time": avg_interval,
-        "total_timespan": last_timestamp - first_timestamp,
-        "blocks_per_hour": 3600 / avg_interval if avg_interval > 0 else 0
-    }
-
-def analyze_chain_size():
-    """Analyze blockchain size metrics"""
-    total_size = 0
-    block_sizes = []
-    
-    for block in blockchain.chain:
-        if hasattr(block, 'to_dict'):
-            block_size = len(json.dumps(block.to_dict()))
-        else:
-            block_size = len(str(block))
-        total_size += block_size
-        block_sizes.append(block_size)
-    
-    return {
-        "total_size_bytes": total_size,
-        "average_block_size": total_size / len(blockchain.chain) if blockchain.chain else 0,
-        "largest_block_size": max(block_sizes) if block_sizes else 0,
-        "smallest_block_size": min(block_sizes) if block_sizes else 0
-    }
-
-def analyze_security_metrics():
-    """Analyze security-related metrics"""
-    auth_attempts = 0
-    failed_blocks = 0
-    
-    for block in blockchain.chain:
-        if hasattr(block, 'data') and block.data.get('action') == 'authenticate':
-            auth_attempts += 1
-        
-        # Check if block hash is valid
-        if (hasattr(block, 'hash') and hasattr(block, 'calculate_hash') and 
-            block.hash != block.calculate_hash()):
-            failed_blocks += 1
-    
-    return {
-        "authentication_attempts": auth_attempts,
-        "failed_blocks": failed_blocks,
-        "integrity_score": (len(blockchain.chain) - failed_blocks) / len(blockchain.chain) if blockchain.chain else 1
-    }
-
-def convert_blockchain_to_csv(chain_data):
-    """Convert blockchain data to CSV format"""
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # Write header
-    writer.writerow(['Index', 'Timestamp', 'Action', 'Username', 'Hash', 'Previous Hash'])
-    
-    # Write data
-    for block in chain_data:
-        writer.writerow([
-            block.get('index', ''),
-            block.get('timestamp', ''),
-            block.get('data', {}).get('action', ''),
-            block.get('data', {}).get('username', ''),
-            block.get('hash', ''),
-            block.get('previous_hash', '')
-        ])
-    
-    return output.getvalue()
-
 def get_system_uptime():
-    """Get system uptime (placeholder)"""
-    return "System uptime tracking would be implemented here"
+    """Get system uptime"""
+    uptime_seconds = get_system_uptime_seconds()
+    if uptime_seconds < 60:
+        return f"{int(uptime_seconds)} seconds"
+    elif uptime_seconds < 3600:
+        return f"{int(uptime_seconds / 60)} minutes"
+    elif uptime_seconds < 86400:
+        return f"{int(uptime_seconds / 3600)} hours"
+    else:
+        return f"{int(uptime_seconds / 86400)} days"
 
 def get_last_backup_time():
-    """Get last backup time (placeholder)"""
-    return "Last backup tracking would be implemented here"
+    """Get last backup time"""
+    try:
+        backup_files = glob.glob('backups/*.json')
+        if backup_files:
+            latest_backup = max(backup_files, key=os.path.getmtime)
+            backup_time = os.path.getmtime(latest_backup)
+            return datetime.fromtimestamp(backup_time).strftime('%Y-%m-%d %H:%M:%S')
+        return "No backups found"
+    except:
+        return "Backup info unavailable"
 
 def get_storage_usage():
     """Get storage usage statistics"""
@@ -481,14 +1604,37 @@ def get_storage_usage():
             if os.path.exists(file_path):
                 blockchain_file_size += os.path.getsize(file_path)
         
+        # Calculate total storage for all related files
+        total_storage = blockchain_file_size
+        
+        # Add security files
+        security_files = ['security_config.json', 'security_timeline.json', 'quarantined_blocks.json']
+        for file_path in security_files:
+            if os.path.exists(file_path):
+                total_storage += os.path.getsize(file_path)
+        
+        # Add backup files
+        backup_files = glob.glob('backups/*.json')
+        for file_path in backup_files:
+            total_storage += os.path.getsize(file_path)
+        
         return {
             "blockchain_file_size": blockchain_file_size,
-            "total_storage": f"{blockchain_file_size} bytes"
+            "total_storage": total_storage,
+            "human_readable": format_file_size(total_storage)
         }
-    except Exception:
-        return {"error": "Unable to calculate storage usage"}
+    except Exception as e:
+        return {"error": f"Unable to calculate storage usage: {e}"}
 
-# ==================== DATABASE AND TABLE MANAGEMENT ROUTES ====================
+def format_file_size(size_bytes):
+    """Convert bytes to human readable format"""
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} TB"
+
+# ==================== DATABASE MANAGEMENT ROUTES ====================
 
 @app.route("/tables/<db_name>")
 def list_tables(db_name):
@@ -527,7 +1673,6 @@ def list_tables(db_name):
         print(f"Error in list_tables: {str(e)}")
         flash(f"Error loading tables: {str(e)}")
         return redirect(url_for('home'))
-
 
 @app.route("/table/<db_name>/<table_name>")
 def view_table(db_name, table_name):
@@ -625,8 +1770,6 @@ def view_table(db_name, table_name):
             # Add ID column at the beginning
             columns = ["ID"] + columns
         
-        print(f"Debug - Table: {table_name}, Items: {len(table_items)}, Columns: {columns}")
-        
         return render_template("table_view.html", 
                              db_name=db_name, 
                              table_name=table_name,
@@ -637,7 +1780,6 @@ def view_table(db_name, table_name):
         print(f"Error in view_table: {str(e)}")
         flash(f"Error loading table '{table_name}': {str(e)}")
         return redirect(url_for('list_tables', db_name=db_name))
-
 
 @app.route("/add_record/<db_name>/<table_name>", methods=["GET", "POST"])
 def add_record(db_name, table_name):
@@ -718,7 +1860,6 @@ def add_record(db_name, table_name):
         flash(f"Error: {str(e)}")
         return redirect(url_for('view_table', db_name=db_name, table_name=table_name))
 
-
 @app.route("/delete_record/<db_name>/<table_name>/<item_id>", methods=["GET", "DELETE", "POST"])
 def delete_record(db_name, table_name, item_id):
     """Delete a record from the specified table"""
@@ -790,7 +1931,6 @@ def delete_record(db_name, table_name, item_id):
             flash(f"Error deleting record: {str(e)}")
             return redirect(url_for('view_table', db_name=db_name, table_name=table_name))
 
-
 def get_table_schema(db_name, table_name):
     """Get the schema for a specific table"""
     try:
@@ -807,7 +1947,6 @@ def get_table_schema(db_name, table_name):
     except Exception as e:
         print(f"Error getting table schema: {str(e)}")
         return None
-
 
 @app.route("/create_database", methods=["GET", "POST"])
 def create_database():
@@ -908,7 +2047,15 @@ def create_database():
             
             if db_path:
                 flash(f"Database '{db_name}' created successfully with {table_count} table(s)!")
-                print(f"Database created at: {db_path}")
+                
+                # Log database creation
+                log_security_event('database_creation', 'success', {
+                    'database_name': db_name,
+                    'created_by': session['username'],
+                    'table_count': table_count,
+                    'timestamp': time.time()
+                })
+                
                 return redirect(url_for('home'))
             else:
                 flash("Failed to create database. Please try again.")
@@ -925,55 +2072,214 @@ def create_database():
     
     return render_template("create_database.html")
 
+# ==================== STARTUP AND INITIALIZATION ====================
 
-# Alternative endpoint for create database
-@app.route("/create_db", methods=["GET", "POST"])
-def create_db():
-    """Alternative endpoint for create database"""
-    return create_database()
+def verify_system_integrity():
+    """Verify system integrity on startup"""
+    try:
+        print("🔍 Verifying system integrity...")
+        
+        # Check blockchain file exists and is valid
+        blockchain_file = "blockchain_db.json"
+        if os.path.exists("system_chains/active/blockchain_db.json"):
+            blockchain_file = "system_chains/active/blockchain_db.json"
+        
+        if not os.path.exists(blockchain_file):
+            print("⚠️  Blockchain database not found - will create new genesis block")
+            return True
+        
+        # Verify blockchain can be loaded
+        try:
+            with open(blockchain_file, 'r') as f:
+                chain_data = json.load(f)
+            
+            if not isinstance(chain_data, list) or len(chain_data) == 0:
+                print("⚠️  Invalid blockchain format - will recreate")
+                return False
+            
+            print(f"✅ Blockchain verified: {len(chain_data)} blocks loaded")
+            return True
+            
+        except json.JSONDecodeError:
+            print("❌ Blockchain file corrupted - will attempt recovery")
+            return False
+            
+    except Exception as e:
+        print(f"❌ System integrity check failed: {e}")
+        return False
 
+def create_startup_backup():
+    """Create system backup on startup"""
+    try:
+        blockchain_file = "blockchain_db.json"
+        if os.path.exists("system_chains/active/blockchain_db.json"):
+            blockchain_file = "system_chains/active/blockchain_db.json"
+            
+        if os.path.exists(blockchain_file):
+            timestamp = int(time.time())
+            backup_name = f"startup_backup_{timestamp}.json"
+            backup_path = os.path.join('backups', backup_name)
+            
+            # Ensure backups directory exists
+            os.makedirs('backups', exist_ok=True)
+            
+            # Create backup
+            shutil.copy2(blockchain_file, backup_path)
+            print(f"💾 Startup backup created: {backup_name}")
+            
+            # Keep only last 10 startup backups
+            backup_files = glob.glob('backups/startup_backup_*.json')
+            if len(backup_files) > 10:
+                backup_files.sort()
+                for old_backup in backup_files[:-10]:
+                    try:
+                        os.remove(old_backup)
+                    except:
+                        pass
+                        
+    except Exception as e:
+        print(f"⚠️  Could not create startup backup: {e}")
 
-# Debug route to check available routes
-@app.route("/debug/routes")
-def debug_routes():
-    """Debug route to show all available routes"""
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    import urllib.parse
-    output = []
-    for rule in app.url_map.iter_rules():
-        methods = ','.join(rule.methods)
-        line = urllib.parse.unquote(f"{rule.endpoint:30s} {methods:20s} {rule}")
-        output.append(line)
-    
-    response = app.make_response("<br>".join(sorted(output)))
-    response.headers["content-type"] = "text/html"
-    return response
-
+# ==================== MAIN APPLICATION STARTUP ====================
 
 if __name__ == "__main__":
-    import socket
-    
-    # Get local IP address
-    hostname = socket.gethostname()
-    local_ip = socket.gethostbyname(hostname)
-    
-    print("="*50)
-    print("🔗 Blockchain Database System Starting...")
-    print("="*50)
-    print(f"🏠 Local access:      http://localhost:1337")
-    print(f"🌐 Network access:    http://{local_ip}:1337")
-    print(f"📱 Mobile access:     http://{local_ip}:1337")
-    print("="*50)
-    print("📊 Available endpoints:")
-    print(f"   • Home:            http://{local_ip}:1337/")
-    print(f"   • Login:           http://{local_ip}:1337/login")
-    print(f"   • Dashboard:       http://{local_ip}:1337/blockchain")
-    print(f"   • API Chain:       http://{local_ip}:1337/api/chain")
-    print(f"   • API Status:      http://{local_ip}:1337/api/status")
-    print("="*50)
-    print("🔥 Server is running... Press Ctrl+C to stop")
-    print("="*50)
-    
-    app.run(host="0.0.0.0", port=1337, debug=True)
+    try:
+        # Initialize security system before starting the server
+        print("🔗 Initializing Blockchain Database System...")
+        print("=" * 60)
+        
+        # Verify system integrity first
+        verify_system_integrity()
+        
+        # Create startup backup
+        create_startup_backup()
+        
+        # Load security configuration on startup
+        load_security_config()
+        ensure_security_files()
+        
+        # Initialize security components
+        print("🛡️ Initializing security systems...")
+        initialize_security_system()
+        
+        # Record system startup time for uptime tracking
+        security_config['system_start_time'] = time.time()
+        save_security_config()
+        
+        # Initialize security monitoring if enabled
+        if security_config.get('enable_auto_reorder', False):
+            print("🔄 Auto-remediation enabled - starting monitoring...")
+            if security_monitor:
+                security_monitor.auto_remediation_enabled = True
+                security_monitor.start_monitoring()
+        
+        # Log system startup
+        log_security_event('system_startup', 'success', {
+            'timestamp': time.time(),
+            'security_features_enabled': True,
+            'auto_monitoring': security_config.get('enable_auto_reorder', False),
+            'version': '2.0',
+            'security_modules': ['SecurityAnalyzer', 'SecurityMonitor', 'EnhancedQuarantine']
+        })
+        
+        # Perform initial security scan
+        print("🔍 Performing initial security scan...")
+        if security_analyzer:
+            initial_scan = security_analyzer.comprehensive_security_scan()
+            violations = initial_scan.get('violations', [])
+            if violations:
+                critical_count = len([v for v in violations if v['severity'] == 'CRITICAL'])
+                high_count = len([v for v in violations if v['severity'] == 'HIGH'])
+                print(f"⚠️ Initial scan found {len(violations)} violations (Critical: {critical_count}, High: {high_count})")
+            else:
+                print("✅ Initial security scan: No violations detected")
+        
+        # Get network information
+        import socket
+        hostname = socket.gethostname()
+        try:
+            local_ip = socket.gethostbyname(hostname)
+        except:
+            local_ip = "127.0.0.1"
+        
+        # Display startup information
+        print("=" * 60)
+        print("🔗 Blockchain Database System Ready!")
+        print("=" * 60)
+        print(f"🏠 Local access:      http://localhost:1337")
+        print(f"🌐 Network access:    http://{local_ip}:1337")
+        print(f"📱 Mobile access:     http://{local_ip}:1337")
+        print("=" * 60)
+        print("📊 Available endpoints:")
+        print(f"   • Home/Databases:  http://{local_ip}:1337/")
+        print(f"   • Login:           http://{local_ip}:1337/login")
+        print(f"   • Blockchain:      http://{local_ip}:1337/blockchain")
+        print(f"   • Security:        http://{local_ip}:1337/security-dashboard")
+        print(f"   • API Chain:       http://{local_ip}:1337/api/chain")
+        print(f"   • API Status:      http://{local_ip}:1337/api/status")
+        print(f"   • Security API:    http://{local_ip}:1337/api/security/status")
+        print("=" * 60)
+        print("🛡️ Security Features:")
+        print(f"   • Real-time monitoring: {'ENABLED' if security_config.get('enable_auto_reorder', False) else 'DISABLED'}")
+        print(f"   • Auto-remediation:     {'ENABLED' if security_config.get('enable_auto_reorder', False) else 'DISABLED'}")
+        print(f"   • Quarantine system:    ENABLED")
+        print(f"   • Violation tracking:   ENABLED")
+        print(f"   • Forensic logging:     ENABLED")
+        print("=" * 60)
+        print("🔥 Server starting... Press Ctrl+C to stop")
+        print("=" * 60)
+        
+        # Register cleanup function for graceful shutdown
+        import atexit
+        
+        def cleanup_on_exit():
+            print("\n🛑 Shutting down Blockchain Database System...")
+            if security_monitor and security_monitor.monitoring:
+                print("🛡️ Stopping security monitoring...")
+                security_monitor.stop_monitoring()
+            
+            # Log system shutdown
+            log_security_event('system_shutdown', 'success', {
+                'timestamp': time.time(),
+                'uptime_seconds': time.time() - security_config.get('system_start_time', time.time()),
+                'graceful_shutdown': True
+            })
+            print("✅ Shutdown complete")
+        
+        atexit.register(cleanup_on_exit)
+        
+        # Start the Flask application
+        app.run(host="0.0.0.0", port=1337, debug=False, threaded=True)
+        
+    except KeyboardInterrupt:
+        print("\n🛑 Received shutdown signal...")
+        if security_monitor and security_monitor.monitoring:
+            print("🛡️ Stopping security monitoring...")
+            security_monitor.stop_monitoring()
+        
+        log_security_event('system_shutdown', 'manual', {
+            'timestamp': time.time(),
+            'shutdown_type': 'keyboard_interrupt'
+        })
+        print("✅ Server stopped")
+        
+    except Exception as e:
+        print(f"❌ Critical error during startup: {e}")
+        
+        # Log startup error
+        log_security_event('system_startup', 'failed', {
+            'timestamp': time.time(),
+            'error': str(e),
+            'critical': True
+        })
+        
+        import traceback
+        traceback.print_exc()
+        
+        print("\n🔧 Troubleshooting tips:")
+        print("   • Check if port 1337 is available")
+        print("   • Verify blockchain database files exist")
+        print("   • Ensure proper permissions for file access")
+        print("   • Check system dependencies")
+        
+        exit(1)

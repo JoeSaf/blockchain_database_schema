@@ -1,26 +1,3 @@
-    def get_path(self, file_type, filename=None, timestamp=None):
-        """
-        FIXED VERSION: Get the appropriate path for different types of chain files
-        Replace your existing get_path method with this
-        """
-        if timestamp is None:
-            timestamp = int(time.time())
-        
-        # ✅ FIXED: Use correct subdirectory mapping
-        base_path = self.subdirs.get(file_type, self.base_dir)
-        
-        if filename:
-            return base_path / filename
-        
-        # ✅ FIXED: Updated naming conventions
-        default_names = {
-            'active': 'blockchain_db.json',
-            'fallbacks': f'enhanced_fallback_db_{timestamp}.json',    # ✅ FIXED
-            'quarantine': f'quarantined_blocks_{timestamp}.json',
-            'backups': f'backup_blockchain_{timestamp}.json',        # ✅ FIXED  
-            'forensics': f'forensic_report_{timestamp}.json',        # ✅ FIXED
-            'clean_chain': f'clean_blockchain_db_{timestamp}.json'   # ✅ ADDED
-        }
-        
-        filename = default_names.get(file_type, f'{file_type}_{timestamp}.json')
-        return base_path / filename
+all quarantined bloack an any other block related json files are stored under system chains, the db_gui doesnt handle this but i think its because its not properly interacting with the polymorphicblock.polymorphicblock.py and
+all quarantine blocks and details should be fetched from the  quarantine dir in system chains and displayed int the gui, in realtime, also db_gui should be an extension of the polymorphic block and its operations arent independent such that to avoid intefering witht eh main chain
+a proper intergration with the whole system needs to be achieved, this time we will just adjust to achieve harmony, i dont think there is a need to regenerate whole files, just the necessary parts needed to function
