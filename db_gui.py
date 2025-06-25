@@ -13,7 +13,9 @@ import shutil
 from collections import defaultdict
 from datetime import datetime, timedelta
 from blockchain_databases import DatabaseStorage, DatabaseManager
-from polymorphicblock import AuthSystem
+from polymorphicblock import AuthSystem, ChainDirectoryManager
+from centralized_chain_management import ChainDirectoryManager as CentralizedManager
+
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -23,6 +25,9 @@ auth_system = AuthSystem()
 db_storage = DatabaseStorage()
 db_manager = DatabaseManager(auth_system)
 blockchain = auth_system.blockchain
+
+# Use the centralized chain manager from the blockchain
+chain_manager = blockchain.chain_manager if hasattr(blockchain, 'chain_manager') else ChainDirectoryManager()
 
 # Security tracking and configuration
 security_violations = []
@@ -443,30 +448,318 @@ def security_dashboard():
     
     return render_template("security_violations.html")
 
+# ==================== INTEGRATED SECURITY ANALYZER ====================
+class IntegratedSecurityAnalyzer:
+    def __init__(self, blockchain, chain_manager):
+        self.blockchain = blockchain
+        self.chain_manager = chain_manager
+        self.violation_history = []
+        self.quarantined_blocks = []
+        self.security_events = []
+        self.load_security_data()
+    
+    def load_security_data(self):
+        """Load existing security data from centralized locations"""
+        try:
+            # Load quarantined blocks from centralized quarantine directory
+            quarantine_dir = self.chain_manager.subdirs['quarantine']
+            quarantine_files = list(quarantine_dir.glob('quarantined_blocks_*.json'))
+            
+            self.quarantined_blocks = []
+            for file_path in quarantine_files:
+                try:
+                    with open(file_path, 'r') as f:
+                        quarantine_data = json.load(f)
+                        if 'quarantined_block_data' in quarantine_data:
+                            self.quarantined_blocks.extend(quarantine_data['quarantined_block_data'])
+                        elif 'infected_blocks' in quarantine_data:
+                            self.quarantined_blocks.extend(quarantine_data['infected_blocks'])
+                except Exception as e:
+                    print(f"Error loading quarantine file {file_path}: {e}")
+            
+            # Load security timeline from forensics directory
+            forensics_dir = self.chain_manager.subdirs['forensics']
+            forensics_files = list(forensics_dir.glob('forensic_report_*.json'))
+            
+            self.security_events = []
+            for file_path in forensics_files:
+                try:
+                    with open(file_path, 'r') as f:
+                        forensic_data = json.load(f)
+                        event = {
+                            'type': 'forensic_analysis',
+                            'timestamp': forensic_data.get('forensic_timestamp', time.time()),
+                            'title': 'Security Analysis Completed',
+                            'description': f"Analysis type: {forensic_data.get('analysis_type', 'Unknown')}",
+                            'details': forensic_data
+                        }
+                        self.security_events.append(event)
+                except Exception as e:
+                    print(f"Error loading forensic file {file_path}: {e}")
+            
+            print(f"🔍 [SECURITY] Loaded {len(self.quarantined_blocks)} quarantined blocks")
+            print(f"📊 [SECURITY] Loaded {len(self.security_events)} security events")
+            
+        except Exception as e:
+            print(f"Error loading security data: {e}")
+    
+    def comprehensive_security_scan(self):
+        """Perform comprehensive security analysis using blockchain's built-in methods"""
+        violations = []
+        current_time = time.time()
+        
+        print(f"\n🔍 [SECURITY SCAN] Analyzing {len(self.blockchain.chain)} blocks...")
+        
+        # Use the blockchain's validation method which already detects infections
+        try:
+            # This will trigger the enhanced validation in polymorphicblock.py
+            is_valid = self.blockchain.is_chain_valid()
+            
+            if not is_valid:
+                print("🚨 [SECURITY] Chain validation failed - checking for new quarantine data")
+                # Reload quarantine data after validation
+                self.load_security_data()
+        except Exception as e:
+            print(f"Error during chain validation: {e}")
+        
+        # Analyze each block for additional security issues
+        for i in range(1, len(self.blockchain.chain)):
+            current_block = self.blockchain.chain[i]
+            previous_block = self.blockchain.chain[i-1]
+            
+            try:
+                # 1. Hash Integrity Check
+                calculated_hash = current_block.calculate_hash()
+                if current_block.hash != calculated_hash:
+                    violations.append({
+                        'block_id': current_block.index,
+                        'violation_type': 'HASH_MISMATCH',
+                        'severity': 'CRITICAL',
+                        'timestamp': current_time,
+                        'description': f'Block hash validation failed',
+                        'stored_hash': current_block.hash,
+                        'calculated_hash': calculated_hash,
+                        'affected_data': str(current_block.data)[:100] + '...' if len(str(current_block.data)) > 100 else str(current_block.data)
+                    })
+                
+                # 2. Chain Continuity Check
+                if current_block.previous_hash != previous_block.hash:
+                    violations.append({
+                        'block_id': current_block.index,
+                        'violation_type': 'CHAIN_BREAK',
+                        'severity': 'CRITICAL',
+                        'timestamp': current_time,
+                        'description': f'Chain integrity violation between blocks {i-1} and {i}',
+                        'expected_hash': previous_block.hash,
+                        'actual_hash': current_block.previous_hash
+                    })
+                
+                # 3. Timestamp Validation
+                #if i > 0 and current_block.timestamp < previous_block.timestamp:
+                 #   violations.append({
+                  #      'block_id': current_block.index,
+                   #     'violation_type': 'TIMESTAMP_ANOMALY',
+                    #    'severity': 'WARNING',
+                     #   'timestamp': current_time,
+                      #  'description': 'Block timestamp is earlier than previous block',
+                       # 'current_timestamp': current_block.timestamp,
+                        #'previous_timestamp': previous_block.timestamp
+                    #})
+                
+                # 4. Data Structure Validation
+                if not isinstance(current_block.data, dict):
+                    violations.append({
+                        'block_id': current_block.index,
+                        'violation_type': 'DATA_CORRUPTION',
+                        'severity': 'HIGH',
+                        'timestamp': current_time,
+                        'description': 'Block data is not a valid dictionary structure'
+                    })
+                elif not current_block.data.get('action'):
+                    violations.append({
+                        'block_id': current_block.index,
+                        'violation_type': 'MISSING_ACTION',
+                        'severity': 'MEDIUM',
+                        'timestamp': current_time,
+                        'description': 'Block missing required action field'
+                    })
+                
+            except Exception as e:
+                violations.append({
+                    'block_id': getattr(current_block, 'index', i),
+                    'violation_type': 'ANALYSIS_ERROR',
+                    'severity': 'MEDIUM',
+                    'timestamp': current_time,
+                    'description': f'Error analyzing block: {str(e)}'
+                })
+        
+        # Store violation history
+        self.violation_history.extend(violations)
+        
+        return {
+            'violations': violations,
+            'scan_timestamp': current_time,
+            'blocks_analyzed': len(self.blockchain.chain),
+            'total_violations': len(violations)
+        }
+    
+    def get_quarantine_data(self):
+        """Get quarantined blocks data from centralized storage"""
+        return self.quarantined_blocks
+    
+    def get_security_timeline(self):
+        """Get security event timeline from centralized storage"""
+        timeline = self.security_events.copy()
+        
+        # Add recent violations to timeline
+        for violation in self.violation_history[-10:]:
+            timeline.append({
+                'type': 'violation_detected',
+                'timestamp': violation['timestamp'],
+                'title': f"Security Violation: {violation['violation_type']}",
+                'description': f"Block #{violation['block_id']}: {violation['description']}",
+                'severity': violation['severity']
+            })
+        
+        # Sort by timestamp (newest first)
+        timeline.sort(key=lambda x: x['timestamp'], reverse=True)
+        return timeline[:100]
+
+# ==================== INTEGRATED SECURITY MONITOR ====================
+class IntegratedSecurityMonitor:
+    def __init__(self, blockchain, security_analyzer):
+        self.blockchain = blockchain
+        self.security_analyzer = security_analyzer
+        self.monitoring = False
+        self.monitor_thread = None
+        self.violation_threshold = 5
+        self.auto_remediation_enabled = False
+    
+    def start_monitoring(self):
+        """Start continuous security monitoring"""
+        if not self.monitoring:
+            self.monitoring = True
+            self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+            self.monitor_thread.start()
+            print("🛡️ Security monitoring started")
+    
+    def stop_monitoring(self):
+        """Stop security monitoring"""
+        self.monitoring = False
+        if self.monitor_thread and self.monitor_thread.is_alive():
+            self.monitor_thread.join(timeout=5)
+        print("🛡️ Security monitoring stopped")
+    
+    def _monitor_loop(self):
+        """Continuous monitoring loop"""
+        while self.monitoring:
+            try:
+                # Perform security scan
+                scan_results = self.security_analyzer.comprehensive_security_scan()
+                
+                # Check if violations exceed threshold
+                if len(scan_results['violations']) >= self.violation_threshold:
+                    self._handle_security_breach(scan_results)
+                
+                # Wait before next scan
+                time.sleep(30)  # Scan every 30 seconds
+                
+            except Exception as e:
+                print(f"Error in security monitoring: {e}")
+                time.sleep(60)  # Wait longer on error
+    
+    def _handle_security_breach(self, scan_results):
+        """Handle detected security breach"""
+        print(f"🚨 SECURITY BREACH DETECTED: {len(scan_results['violations'])} violations found")
+        
+        # Log security event
+        log_security_event('security_breach', 'detected', {
+            'violation_count': len(scan_results['violations']),
+            'auto_remediation': self.auto_remediation_enabled
+        })
+        
+        if self.auto_remediation_enabled:
+            self._perform_auto_remediation(scan_results)
+    
+    def _perform_auto_remediation(self, scan_results):
+        """Perform automatic remediation using blockchain's built-in methods"""
+        try:
+            print("🛠️ [AUTO-REMEDIATION] Starting automatic remediation...")
+            
+            # Trigger blockchain validation which will handle quarantine automatically
+            self.blockchain.is_chain_valid()
+            
+            # Reload security data
+            self.security_analyzer.load_security_data()
+            
+            print(f"🛠️ Auto-remediation completed")
+            
+        except Exception as e:
+            print(f"Error in auto-remediation: {e}")
+
+# Initialize integrated security components
+security_analyzer = None
+security_monitor = None
+
+def initialize_integrated_security_system():
+    """Initialize the integrated security system components"""
+    global security_analyzer, security_monitor
+    
+    try:
+        security_analyzer = IntegratedSecurityAnalyzer(blockchain, chain_manager)
+        security_monitor = IntegratedSecurityMonitor(blockchain, security_analyzer)
+        
+        # Start monitoring if auto-remediation is enabled
+        if security_config.get('enable_auto_reorder', False):
+            security_monitor.auto_remediation_enabled = True
+            security_monitor.start_monitoring()
+        
+        print("🛡️ Integrated security system initialized successfully")
+        
+    except Exception as e:
+        print(f"❌ Failed to initialize integrated security system: {e}")
+
 # ==================== ENHANCED SECURITY API ENDPOINTS ====================
 
 @app.route("/api/security/status", methods=["GET"])
 def get_security_status():
-    """Get comprehensive security status"""
+    """Get comprehensive security status using integrated system"""
     try:
         global security_analyzer
         
         if not security_analyzer:
-            initialize_security_system()
+            initialize_integrated_security_system()
         
         # Perform real-time security analysis
-        violations = analyze_security_violations()
-        quarantine_data = get_quarantine_data()
-        metrics = calculate_security_metrics()
+        violations = security_analyzer.comprehensive_security_scan()['violations']
+        quarantine_data = security_analyzer.get_quarantine_data()
+        
+        # Calculate metrics
+        integrity_score = 100
+        critical_violations = len([v for v in violations if v['severity'] == 'CRITICAL'])
+        high_violations = len([v for v in violations if v['severity'] == 'HIGH'])
+        
+        if len(blockchain.chain) > 0:
+            integrity_score -= (critical_violations * 25)
+            integrity_score -= (high_violations * 15)
+            integrity_score = max(0, integrity_score)
         
         # Assess threat level
-        threat_level = assess_threat_level(violations, quarantine_data)
+        threat_level = 'NONE'
+        if critical_violations >= 3:
+            threat_level = 'CRITICAL'
+        elif critical_violations >= 1 or high_violations >= 5:
+            threat_level = 'HIGH'
+        elif high_violations >= 2:
+            threat_level = 'MEDIUM'
+        elif len(violations) > 0:
+            threat_level = 'LOW'
         
         # Calculate system status
         system_status = 'healthy'
-        if len([v for v in violations if v['severity'] == 'CRITICAL']) > 0:
+        if critical_violations > 0:
             system_status = 'critical'
-        elif len([v for v in violations if v['severity'] == 'HIGH']) >= 3:
+        elif high_violations >= 3:
             system_status = 'warning'
         elif len(violations) > 0:
             system_status = 'attention_needed'
@@ -474,7 +767,7 @@ def get_security_status():
         status = {
             'total_violations': len(violations),
             'quarantined_blocks': len(quarantine_data),
-            'integrity_score': metrics.get('integrity_score', 100),
+            'integrity_score': integrity_score,
             'threat_level': threat_level,
             'system_status': system_status,
             'last_security_scan': security_config.get('last_security_scan'),
@@ -484,9 +777,10 @@ def get_security_status():
             'reorder_count': security_config.get('reorder_count', 0),
             'chain_length': len(blockchain.chain),
             'scan_interval': security_config.get('scan_interval', 3600),
+            'centralized_storage': str(chain_manager.base_dir),
             'violation_breakdown': {
-                'critical': len([v for v in violations if v['severity'] == 'CRITICAL']),
-                'high': len([v for v in violations if v['severity'] == 'HIGH']),
+                'critical': critical_violations,
+                'high': high_violations,
                 'medium': len([v for v in violations if v['severity'] == 'MEDIUM']),
                 'low': len([v for v in violations if v['severity'] == 'LOW'])
             },
@@ -505,14 +799,14 @@ def get_security_status():
 
 @app.route("/api/security/violations", methods=["GET"])
 def get_security_violations():
-    """Get detailed security violations"""
+    """Get detailed security violations from integrated system"""
     try:
         global security_analyzer
         
         if not security_analyzer:
-            initialize_security_system()
+            initialize_integrated_security_system()
         
-        violations = analyze_security_violations()
+        violations = security_analyzer.comprehensive_security_scan()['violations']
         
         # Sort violations by severity and timestamp
         severity_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
@@ -532,6 +826,7 @@ def get_security_violations():
             'low_count': len([v for v in violations if v['severity'] == 'LOW']),
             'violation_types': dict(violation_types),
             'scan_timestamp': time.time(),
+            'centralized_storage': str(chain_manager.base_dir),
             'recommendations': generate_security_recommendations(violations)
         }), 200
         
@@ -545,35 +840,43 @@ def get_security_violations():
 
 @app.route("/api/security/quarantine", methods=["GET"])
 def get_quarantine_status():
-    """Get quarantined blocks status"""
+    """Get quarantined blocks status from centralized storage"""
     try:
         global security_analyzer
         
         if not security_analyzer:
-            initialize_security_system()
+            initialize_integrated_security_system()
         
-        quarantine_data = get_quarantine_data()
+        quarantine_data = security_analyzer.get_quarantine_data()
         
         # Add additional metadata to quarantine data
         enhanced_quarantine_data = []
         for item in quarantine_data:
             enhanced_item = item.copy()
-            enhanced_item['quarantine_duration'] = time.time() - item.get('quarantine_timestamp', 0)
-            enhanced_item['can_restore'] = True  # You can add logic for restoration eligibility
+            quarantine_time = item.get('quarantine_timestamp', item.get('timestamp', time.time()))
+            enhanced_item['quarantine_duration'] = time.time() - quarantine_time
+            enhanced_item['can_restore'] = True
+            enhanced_item['storage_location'] = str(chain_manager.subdirs['quarantine'])
             enhanced_quarantine_data.append(enhanced_item)
+        
+        # Get quarantine directory info
+        quarantine_dir = chain_manager.subdirs['quarantine']
+        quarantine_files = list(quarantine_dir.glob('quarantined_blocks_*.json'))
         
         return jsonify({
             'infected_blocks': enhanced_quarantine_data,
             'total_count': len(quarantine_data),
+            'quarantine_files': len(quarantine_files),
+            'centralized_storage': str(quarantine_dir),
             'quarantine_summary': {
-                'oldest_quarantine': min([item.get('quarantine_timestamp', time.time()) 
+                'oldest_quarantine': min([item.get('quarantine_timestamp', item.get('timestamp', time.time()))
                                         for item in quarantine_data], default=time.time()),
-                'newest_quarantine': max([item.get('quarantine_timestamp', 0) 
+                'newest_quarantine': max([item.get('quarantine_timestamp', item.get('timestamp', 0))
                                         for item in quarantine_data], default=0),
                 'auto_quarantined': len([item for item in quarantine_data 
-                                       if 'Auto-quarantine' in item.get('reason', '')]),
+                                       if 'Auto-quarantine' in str(item.get('reason', ''))]),
                 'manual_quarantined': len([item for item in quarantine_data 
-                                         if 'Auto-quarantine' not in item.get('reason', '')])
+                                         if 'Auto-quarantine' not in str(item.get('reason', ''))])
             }
         }), 200
         
@@ -586,33 +889,20 @@ def get_quarantine_status():
 
 @app.route("/api/security/timeline", methods=["GET"])
 def get_security_timeline():
-    """Get security event timeline"""
+    """Get security event timeline from centralized storage"""
     try:
-        # Get timeline events from file and recent violations
-        timeline = get_security_timeline()
+        global security_analyzer
         
-        # Add recent security scan results to timeline
-        if security_analyzer:
-            recent_violations = security_analyzer.violation_history[-10:]  # Last 10 violations
-            for violation in recent_violations:
-                timeline.append({
-                    'type': 'violation_detected',
-                    'timestamp': violation['timestamp'],
-                    'title': f"Security Violation: {violation['violation_type']}",
-                    'description': f"Block #{violation['block_id']}: {violation['description']}",
-                    'severity': violation['severity']
-                })
+        if not security_analyzer:
+            initialize_integrated_security_system()
         
-        # Sort by timestamp (newest first)
-        timeline.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        # Limit to last 100 events
-        timeline = timeline[:100]
+        timeline = security_analyzer.get_security_timeline()
         
         return jsonify({
             'events': timeline,
             'total_events': len(timeline),
             'event_types': list(set([event.get('type', 'unknown') for event in timeline])),
+            'centralized_storage': str(chain_manager.subdirs['forensics']),
             'last_update': time.time()
         }), 200
         
@@ -625,7 +915,7 @@ def get_security_timeline():
 
 @app.route("/api/security/scan", methods=["POST"])
 def trigger_security_scan():
-    """Trigger comprehensive security scan"""
+    """Trigger comprehensive security scan using integrated system"""
     try:
         if 'username' not in session or session.get('role') != 'admin':
             return jsonify({"error": "Unauthorized - Admin access required"}), 403
@@ -633,10 +923,10 @@ def trigger_security_scan():
         global security_analyzer
         
         if not security_analyzer:
-            initialize_security_system()
+            initialize_integrated_security_system()
         
         # Perform comprehensive security scan
-        scan_results = perform_comprehensive_scan()
+        scan_results = security_analyzer.comprehensive_security_scan()
         
         # Update last scan time
         security_config['last_security_scan'] = time.time()
@@ -646,13 +936,19 @@ def trigger_security_scan():
         log_security_event('security_scan', 'completed', {
             'triggered_by': session['username'],
             'violations_found': len(scan_results.get('violations', [])),
-            'blocks_quarantined': len(scan_results.get('quarantined', [])),
-            'scan_duration': time.time() - scan_results.get('scan_details', {}).get('scan_timestamp', time.time())
+            'blocks_analyzed': scan_results.get('blocks_analyzed', 0),
+            'centralized_storage': str(chain_manager.base_dir),
+            'scan_duration': time.time() - scan_results.get('scan_timestamp', time.time())
         })
         
         return jsonify({
             'status': 'completed',
-            'results': scan_results,
+            'results': {
+                'violations': scan_results['violations'],
+                'quarantined': security_analyzer.get_quarantine_data(),
+                'centralized_storage': str(chain_manager.base_dir),
+                'scan_details': scan_results
+            },
             'scan_timestamp': time.time(),
             'triggered_by': session['username']
         }), 200
@@ -1239,58 +1535,57 @@ def get_security_timeline():
     return timeline[:50]  # Return last 50 events
 
 def log_security_event(event_type, status, details):
-    """Log security events to timeline"""
-    timeline_file = 'security_timeline.json'
-    
-    event = {
-        'type': event_type,
-        'status': status,
-        'timestamp': time.time(),
-        'title': f"{event_type.title().replace('_', ' ')} {status.title()}",
-        'description': f"{event_type.replace('_', ' ').title()} was {status}",
-        'details': details
-    }
-    
-    timeline = []
-    if os.path.exists(timeline_file):
-        try:
-            with open(timeline_file, 'r') as f:
-                timeline = json.load(f)
-        except:
-            timeline = []
-    
-    timeline.append(event)
-    
-    # Keep only last 1000 events
-    timeline = timeline[-1000:]
-    
+    """Log security events to centralized forensics directory"""
     try:
+        forensics_dir = chain_manager.subdirs['forensics']
+        timeline_file = forensics_dir / 'security_timeline.json'
+        
+        event = {
+            'type': event_type,
+            'status': status,
+            'timestamp': time.time(),
+            'title': f"{event_type.title().replace('_', ' ')} {status.title()}",
+            'description': f"{event_type.replace('_', ' ').title()} was {status}",
+            'details': details
+        }
+        
+        timeline = []
+        if timeline_file.exists():
+            try:
+                with open(timeline_file, 'r') as f:
+                    timeline = json.load(f)
+            except:
+                timeline = []
+        
+        timeline.append(event)
+        timeline = timeline[-1000:]  # Keep only last 1000 events
+        
         with open(timeline_file, 'w') as f:
             json.dump(timeline, f, indent=2)
+            
     except Exception as e:
         print(f"Failed to log security event: {e}")
 
 def save_security_config():
-    """Save security configuration to file"""
-    config_file = 'security_config.json'
+    """Save security configuration to centralized location"""
     try:
+        config_file = chain_manager.base_dir / 'security_config.json'
         with open(config_file, 'w') as f:
             json.dump(security_config, f, indent=2)
     except Exception as e:
         print(f"Failed to save security config: {e}")
 
 def load_security_config():
-    """Load security configuration from file"""
+    """Load security configuration from centralized location"""
     global security_config
-    config_file = 'security_config.json'
-    
-    if os.path.exists(config_file):
-        try:
+    try:
+        config_file = chain_manager.base_dir / 'security_config.json'
+        if config_file.exists():
             with open(config_file, 'r') as f:
                 loaded_config = json.load(f)
                 security_config.update(loaded_config)
-        except Exception as e:
-            print(f"Failed to load security config: {e}")
+    except Exception as e:
+        print(f"Failed to load security config: {e}")
 
 def ensure_security_files():
     """Ensure all security-related files exist with proper structure"""
@@ -1340,31 +1635,31 @@ def generate_security_recommendations(violations):
     recommendations = []
     
     if not violations:
-        recommendations.append("System is secure - no violations detected")
+        recommendations.append("✅ System is secure - no violations detected")
         return recommendations
     
     critical_count = len([v for v in violations if v['severity'] == 'CRITICAL'])
     high_count = len([v for v in violations if v['severity'] == 'HIGH'])
     
     if critical_count > 0:
-        recommendations.append(f"Immediate attention required: {critical_count} critical violations detected")
-        recommendations.append("Consider running chain reorder to fix integrity issues")
+        recommendations.append(f"🚨 Immediate attention required: {critical_count} critical violations detected")
+        recommendations.append("🔧 Run blockchain validation to trigger automatic quarantine")
     
     if high_count > 3:
-        recommendations.append(f"Review {high_count} high-severity violations")
-        recommendations.append("Enable automatic remediation for faster response")
+        recommendations.append(f"⚠️ Review {high_count} high-severity violations")
+        recommendations.append("🛡️ Enable automatic remediation for faster response")
     
     if len(violations) > 10:
-        recommendations.append("High violation count detected - review security policies")
+        recommendations.append("📊 High violation count detected - review security policies")
     
     # Check violation types
     violation_types = [v['violation_type'] for v in violations]
     if 'HASH_MISMATCH' in violation_types:
-        recommendations.append("Hash mismatches detected - verify data integrity")
+        recommendations.append("🔐 Hash mismatches detected - verify data integrity")
     if 'CHAIN_BREAK' in violation_types:
-        recommendations.append("Chain continuity issues found - immediate repair needed")
-    if 'SUSPICIOUS_AUTH_PATTERN' in violation_types:
-        recommendations.append("Suspicious authentication patterns - review user access")
+        recommendations.append("⛓️ Chain continuity issues found - immediate repair needed")
+    
+    recommendations.append(f"📁 All quarantine data stored in: {chain_manager.subdirs['quarantine']}")
     
     return recommendations
 

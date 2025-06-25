@@ -517,6 +517,49 @@ class User:
         print(f"Stored item '{item_name}' for user {self.username}")
         return item_path
 
+def console_security_dashboard(blockchain):
+    """Console-based security dashboard"""
+    try:
+        from db_gui import IntegratedSecurityAnalyzer
+        
+        if hasattr(blockchain, 'chain_manager'):
+            analyzer = IntegratedSecurityAnalyzer(blockchain, blockchain.chain_manager)
+        else:
+            print("❌ Chain manager not found. Please reinitialize the system.")
+            return
+        
+        print("\n🛡️ Security Dashboard")
+        print("=" * 50)
+        
+        # Perform security scan
+        scan_results = analyzer.comprehensive_security_scan()
+        violations = scan_results['violations']
+        
+        print(f"📊 Scan Results:")
+        print(f"   Blocks analyzed: {scan_results['blocks_analyzed']}")
+        print(f"   Violations found: {len(violations)}")
+        
+        if violations:
+            print(f"\n🚨 Active Violations:")
+            for v in violations[:5]:  # Show first 5
+                print(f"   • Block #{v['block_id']}: {v['violation_type']} ({v['severity']})")
+        else:
+            print(f"✅ No violations detected!")
+        
+        # Show quarantine data
+        quarantine_data = analyzer.get_quarantine_data()
+        print(f"\n🔒 Quarantine Status:")
+        print(f"   Quarantined blocks: {len(quarantine_data)}")
+        
+        if hasattr(blockchain, 'chain_manager'):
+            print(f"   Storage location: {blockchain.chain_manager.subdirs['quarantine']}")
+        
+        input("\nPress Enter to continue...")
+        
+    except Exception as e:
+        print(f"❌ Security dashboard error: {e}")
+
+
 class AuthSystem:
     def __init__(self):
         self.blockchain = Blockchain()
@@ -683,7 +726,7 @@ def main_menu(username, user_role, auth_system, adjuster=None):
     """Main menu after successful login"""
     
     while True:
-        print("\nBlockchain Authentication System")
+        print("\nIntegrated Blockchain Authentication System")
         print("1. List Users")
         print("2. Add User (Admin Only)")
         print("3. Verify Blockchain Integrity")
@@ -691,7 +734,9 @@ def main_menu(username, user_role, auth_system, adjuster=None):
         print("5. Database Operations")
         print("6. User Item Management")
         print("7. Refresh Blockchain State")
-        print("8. Logout")
+        print("8. Start Web GUI (Admin Only)")
+        print("9. Security Dashboard (Console)")
+        print("10. Logout")
         choice = input("Enter option: ")
 
         if choice == "1":
@@ -733,13 +778,44 @@ def main_menu(username, user_role, auth_system, adjuster=None):
             auth_system.verify_blockchain()
             print("Blockchain state refreshed successfully.")
             
-        elif choice == "8":
+        elif choice == "8" and user_role == "admin":
+            gui_process = start_web_gui()
+            if gui_process:
+                input("Press Enter to continue (Web GUI will run in background)...")
+            
+        elif choice == "9":
+            console_security_dashboard(auth_system.blockchain)
+            
+        elif choice == "10":
             print("Logging out...")
             break
             
         else:
             print("Invalid option or insufficient privileges!")
-            
+
+def start_web_gui():
+    """Start the web GUI from within polymorphicblock"""
+    try:
+        print("\n🌐 Starting integrated web GUI...")
+        print("🔧 Initializing security dashboard...")
+        
+        # Import and run the integrated db_gui
+        import subprocess
+        import sys
+        
+        # Run the web GUI in a separate process
+        gui_process = subprocess.Popen([
+            sys.executable, "db_gui.py"
+        ], cwd=os.getcwd())
+        
+        print("🌐 Web GUI started successfully!")
+        print("🔗 Access the security dashboard at: http://localhost:1337/security-dashboard")
+        
+        return gui_process
+        
+    except Exception as e:
+        print(f"❌ Failed to start web GUI: {e}")
+        return None
 
 def database_menu(username, user_role, auth_system):
     """Database operations menu"""
