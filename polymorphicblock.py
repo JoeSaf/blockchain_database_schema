@@ -133,13 +133,19 @@ class Blockchain:
         self.chain.append(new_block)
         self.save_chain()
     
-# Add this enhanced method to your existing Blockchain class in polymorphicblock.py
 
     def is_chain_valid(self):
         """
-        Enhanced chain validation that identifies specific infected blocks,
-        echoes their IDs, and creates a clean fallback chain excluding infected blocks
+        Enhanced chain validation that reloads from disk first to detect real-time changes
         """
+        # ADDED: Force reload chain from disk to get current state
+        try:
+            print("🔍 [INTEGRITY] Reloading chain from disk for fresh validation...")
+            self.load_chain()
+        except Exception as e:
+            print(f"❌ [INTEGRITY] Failed to reload chain: {str(e)}")
+            # Continue with existing chain if reload fails
+        
         print("\n🔍 [ENHANCED SECURITY SCAN] Analyzing blockchain integrity...")
         print("=" * 70)
         
@@ -212,7 +218,8 @@ class Blockchain:
         self._create_enhanced_fallback_response(infected_blocks)
         
         return False
-
+    
+    
     def _create_enhanced_fallback_response(self, infected_blocks):
 
         print("\n🛡️  [QUARANTINE PROTOCOL] Creating clean fallback chain...")
@@ -725,6 +732,11 @@ def authenticate():
 def main_menu(username, user_role, auth_system, adjuster=None):
     """Main menu after successful login"""
     
+    # Start the block adjuster timer when entering main menu (for admin users)
+    if adjuster and user_role == "admin":
+        adjuster.start_timer(interval=60)  # Reorder every 60 seconds for testing
+        print("🔧 Block reordering activated (admin mode)")
+    
     while True:
         print("\nIntegrated Blockchain Authentication System")
         print("1. List Users")
@@ -736,7 +748,8 @@ def main_menu(username, user_role, auth_system, adjuster=None):
         print("7. Refresh Blockchain State")
         print("8. Start Web GUI (Admin Only)")
         print("9. Security Dashboard (Console)")
-        print("10. Logout")
+        print("10. Manual Block Reorder (Admin Only)")  # NEW OPTION
+        print("11. Logout")
         choice = input("Enter option: ")
 
         if choice == "1":
@@ -761,9 +774,9 @@ def main_menu(username, user_role, auth_system, adjuster=None):
             for block in auth_system.blockchain.to_dict():
                 block_data = block.get("data", {})
                 action = block_data.get("action", "Unknown")
-                username = block_data.get("username", "N/A")
+                username_block = block_data.get("username", "N/A")
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(block["timestamp"]))
-                print(f"Block #{block['index']}: {action} - {username} ({timestamp})")
+                print(f"Block #{block['index']}: {action} - {username_block} ({timestamp})")
                 
         elif choice == "5":
             database_menu(username, user_role, auth_system)
@@ -786,13 +799,27 @@ def main_menu(username, user_role, auth_system, adjuster=None):
         elif choice == "9":
             console_security_dashboard(auth_system.blockchain)
             
-        elif choice == "10":
+        elif choice == "10" and user_role == "admin":  # NEW OPTION
+            if adjuster:
+                print("🔧 Triggering manual block reorder...")
+                success = adjuster.manual_reorder()
+                if success:
+                    print("✅ Manual reorder completed successfully")
+                else:
+                    print("❌ Manual reorder failed")
+            else:
+                print("❌ Block adjuster not available")
+            
+        elif choice == "11":  # Updated logout option
             print("Logging out...")
+            if adjuster:
+                adjuster.stop_timer()  # Stop the timer when logging out
             break
             
         else:
             print("Invalid option or insufficient privileges!")
-
+            
+            
 def start_web_gui():
     """Start the web GUI from within polymorphicblock"""
     try:
