@@ -1,0 +1,751 @@
+[
+  {
+    "type": "monitoring_toggle",
+    "status": "stopped",
+    "timestamp": 1750835738.4546425,
+    "title": "Monitoring Toggle Stopped",
+    "description": "Monitoring Toggle was stopped",
+    "details": {
+      "action": "toggle",
+      "triggered_by": "admin",
+      "monitoring_status": true
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835760.1937635,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835765.3012252,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835790.2026868,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835795.3101945,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835820.2121902,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835825.3191402,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835850.221316,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835855.3286765,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835880.2268314,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835885.3388448,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835910.2354074,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835915.3483856,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835940.2451894,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835945.35834,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835970.2501416,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750835975.368206,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836000.2596984,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836005.378052,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836030.2698722,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836035.3880734,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836060.2803228,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836065.3985724,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836090.286181,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836095.4120502,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836120.2958887,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836125.423032,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836150.3083477,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836155.4340408,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836180.3152177,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836185.4412096,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836210.322388,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836215.4463122,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836243.5351255,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836245.4514465,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836273.5400681,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836275.4568448,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836303.549634,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836305.4664032,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836333.561169,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836335.477895,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836363.5731034,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836365.4897673,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836393.5851939,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836395.5017087,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836423.592424,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836425.5089014,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836453.5977967,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836455.5148232,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836483.6037881,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836485.5212212,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836513.6141686,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836515.531694,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836543.6268208,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836545.5452983,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836573.6390553,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836575.5583122,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836603.6514719,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836605.5711124,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836633.6641693,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836635.583481,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836663.6771042,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836665.5960848,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836693.6898572,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836695.603922,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836723.7025938,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836725.614761,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  },
+  {
+    "type": "security_breach",
+    "status": "detected",
+    "timestamp": 1750836753.710508,
+    "title": "Security Breach Detected",
+    "description": "Security Breach was detected",
+    "details": {
+      "violation_count": 9,
+      "auto_remediation": false
+    }
+  }
+]
